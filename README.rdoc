@@ -1,5 +1,5 @@
 == WARNING
-THIS GEM IS NOT COMPATIBLE WITH http://ordered-tree.rubyforge.org/
+THIS GEM IS NOT COMPATIBLE WITH http://ordered-tree.rubyforge.org
 
 == ActsAsOrderedTree
 
