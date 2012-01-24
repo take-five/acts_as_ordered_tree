@@ -7,6 +7,9 @@ Specify this +acts_as+ extension if you want to model an ordered tree structure 
 association and a sort column. This requires that you have a foreign key column, which by default is called +parent_id+, and
 a sort column, which by default is called +position+.
 
+== Requirements
+Gem depends on <tt>active_record 3.0+</tt>.
+
 == Installation
 Install it via rubygems:
   gem install acts_as_ordered_tree

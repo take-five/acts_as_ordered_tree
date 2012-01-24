@@ -1,5 +1,4 @@
 require "active_support/concern"
-require "active_support/memoizable"
 
 module ActsAsOrderedTree
   module List
@@ -13,7 +12,8 @@ module ActsAsOrderedTree
       before_update :add_to_list_bottom, :if => :parent_changed?
     end
 
-    module InstanceMethods
+    # It should invoke callbacks, so we patch +acts_as_list+ methods
+    module PatchedMethods
       private
       def remove_from_old_list
         unchanged = self.class.find(id)
@@ -21,11 +21,7 @@ module ActsAsOrderedTree
 
         nil
       end
-    end
 
-    # It should invoke callbacks, so we patch +acts_as_list+ methods
-    module PatchedMethods
-      private
       # This has the effect of moving all the higher items up one.
       def decrement_positions_on_higher_items(position)
         higher_than(position).each do |node|

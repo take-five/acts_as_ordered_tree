@@ -1,12 +1,11 @@
 require "enumerator"
 
-require "active_support/concern"
-require "active_support/memoizable"
 require "active_record"
 require "acts_as_list"
 require "acts_as_tree"
 
 require "acts_as_ordered_tree/version"
+require "acts_as_ordered_tree/iterator"
 require "acts_as_ordered_tree/tree"
 require "acts_as_ordered_tree/list"
 

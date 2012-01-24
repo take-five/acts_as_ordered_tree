@@ -8,8 +8,6 @@ module ActsAsOrderedTree
     class NullArgument < ArgumentError; end
     NA = NullArgument.new
 
-    extend ActiveSupport::Memoizable
-
     delegate :[], :<<, :+, :-, :&, :|, :*,
              :at, :concat, :empty?, :fetch, :flatten,
              :insert, :last, :pop, :push,
@@ -92,6 +90,5 @@ module ActsAsOrderedTree
       @enumerator = @enumerator.to_a unless @enumerator.is_a?(Array)
       @enumerator
     end
-    memoize :to_ary!
   end
 end
