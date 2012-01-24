@@ -11,6 +11,7 @@ module ActsAsOrderedTree
       end
 
       scope :roots, where(parent_column => nil).order(position_column)
+      validate :validate_incest
     end
 
     # == Instance methods
@@ -94,6 +95,12 @@ module ActsAsOrderedTree
         self[position_column] = another_node[position_column] + 1
         save
       end
+    end
+
+    protected
+    def validate_incest
+      errors.add(:parent, :linked_to_self) if parent == self
+      errors.add(:parent, :linked_to_descendant) if descendants.include?(parent)
     end
   end # module Tree
 end # module ActsAsOrderedTree

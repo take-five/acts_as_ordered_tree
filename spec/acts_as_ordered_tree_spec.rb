@@ -220,4 +220,16 @@ describe ActsAsOrderedTree do
       branch.children.first.position.should eq(1)
     end
   end
+
+  describe "validations" do
+    it "should not allow to link parent to itself" do
+      branch.parent = branch
+      branch.should_not be_valid
+    end
+
+    it "should not allow to link to one of its descendants" do
+      branch.parent = leaf
+      branch.should_not be_valid
+    end
+  end
 end
