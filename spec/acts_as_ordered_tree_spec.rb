@@ -27,6 +27,7 @@ describe ActsAsOrderedTree do
     it "should have roots" do
       Node.roots.count.should eq(1)
       Node.roots.first.should eq(root)
+      Node.root.should eq(root)
     end
   end
 

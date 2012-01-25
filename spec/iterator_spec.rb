@@ -64,4 +64,10 @@ describe ActsAsOrderedTree::Iterator do
     iter.should have(4).items
     iter.last.should eq(4)
   end
+
+  it "should raise NoMethodError" do
+    iter = ActsAsOrderedTree::Iterator.new([1, 2])
+    
+    lambda { iter.__undefined_method__ }.should raise_error(NoMethodError)
+  end
 end

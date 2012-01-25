@@ -8,9 +8,17 @@ module ActsAsOrderedTree
       # remove +acts_as_tree+ version of +roots+ method
       class << self
         remove_method :roots
+
+        # Retrieve first root node
+        #
+        # Replacement for native +ActsAsTree.root+ method
+        def root
+          roots.first
+        end
       end
 
       scope :roots, where(parent_column => nil).order(position_column)
+
       validate :validate_incest
     end
 
