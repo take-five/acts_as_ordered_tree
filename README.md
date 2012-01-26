@@ -9,14 +9,14 @@ a sort column, which by default is called `position`.
 Gem depends on `active_record >= 3`.
 
 ## Installation
-Install it via rubygems:
+Install it via rubygems
 ```bash
   gem install acts_as_ordered_tree
 ```
 
 Gem depends on `acts_as_tree` and `acts_as_list` gems.
 
-Setup your model:
+Setup your model
 ```ruby
   class Node < ActiveRecord::Base
     acts_as_ordered_tree
