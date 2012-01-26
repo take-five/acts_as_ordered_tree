@@ -1,14 +1,14 @@
 # Acts As Ordered Tree
 WARNING! THIS GEM IS NOT COMPATIBLE WITH <a href="http://ordered-tree.rubyforge.org">ordered_tree gem</a>.
 
-Specify this +acts_as+ extension if you want to model an ordered tree structure by providing a parent association, a children
-association and a sort column. This requires that you have a foreign key column, which by default is called +parent_id+, and
-a sort column, which by default is called +position+.
+Specify this `acts_as` extension if you want to model an ordered tree structure by providing a parent association, a children
+association and a sort column. For proper use you should have a foreign key column, which by default is called `parent_id`, and
+a sort column, which by default is called `position`.
 
-== Requirements
+## Requirements
 Gem depends on `active_record >= 3`.
 
-== Installation
+## Installation
 Install it via rubygems:
 ```bash
   gem install acts_as_ordered_tree
