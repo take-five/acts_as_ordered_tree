@@ -9,63 +9,65 @@ a sort column, which by default is called `position`.
 Gem depends on `active_record >= 3`.
 
 ## Installation
-Install it via rubygems
+Install it via rubygems:
+
 ```bash
-  gem install acts_as_ordered_tree
+gem install acts_as_ordered_tree
 ```
 
 Gem depends on `acts_as_tree` and `acts_as_list` gems.
 
-Setup your model
-```ruby
-  class Node < ActiveRecord::Base
-    acts_as_ordered_tree
+Setup your model:
 
-    # gem introduces new ActiveRecord callbacks:
-    # *_reorder - fires when position (but not parent node) is changed
-    # *_move - fires when parent node is changed
-    before_reorder :do_smth
-    before_move :do_smth_else
-  end
+```ruby
+class Node < ActiveRecord::Base
+  acts_as_ordered_tree
+
+  # gem introduces new ActiveRecord callbacks:
+  # *_reorder - fires when position (but not parent node) is changed
+  # *_move - fires when parent node is changed
+  before_reorder :do_smth
+  before_move :do_smth_else
+end
 ```
 
 ## Example
 ```ruby
-  root
-   \_ child1
-        \_ subchild1
-        \_ subchild2
+# root
+#  \_ child1
+#       \_ subchild1
+#       \_ subchild2
 
 
-  root = Node.create(:name => "root")
-  child1 = root.children.create(:name => "child1")
-  subchild1 = child1.children.create("name" => "subchild1")
-  subchild2 = child1.children.create("name" => "subchild2")
+root = Node.create(:name => "root")
+child1 = root.children.create(:name => "child1")
+subchild1 = child1.children.create("name" => "subchild1")
+subchild2 = child1.children.create("name" => "subchild2")
 
-  Node.roots # => [root]
+Node.roots # => [root]
 
-  root.root? # => true
-  root.parent # => nil
-  root.ancestors # => []
-  root.descendants # => [child1, subchild1, subchild2]
+root.root? # => true
+root.parent # => nil
+root.ancestors # => []
+root.descendants # => [child1, subchild1, subchild2]
 
-  child1.parent # => root
-  child1.ancestors # => [root]
-  child1.children # => [subchild1, subchild2]
-  child1.descendants # => [subchild1, subchild2]
-  child1.root? # => false
-  child1.leaf? # => false
+child1.parent # => root
+child1.ancestors # => [root]
+child1.children # => [subchild1, subchild2]
+child1.descendants # => [subchild1, subchild2]
+child1.root? # => false
+child1.leaf? # => false
 
-  subchild1.ancestors # => [child1, root]
-  subchild1.root # => [root]
-  subchild1.leaf? # => true
-  subchild1.first? # => true
-  subchild1.last? # => false
-  subchild2.last? # => true
+subchild1.ancestors # => [child1, root]
+subchild1.root # => [root]
+subchild1.leaf? # => true
+subchild1.first? # => true
+subchild1.last? # => false
+subchild2.last? # => true
 
-  subchild1.move_to_above_of(child1)
-  subchild1.move_to_bottom_of(child1)
-  subchild1.move_to_child_of(root)
-  subchild1.move_lower
-  subchild1.move_higher
+subchild1.move_to_above_of(child1)
+subchild1.move_to_bottom_of(child1)
+subchild1.move_to_child_of(root)
+subchild1.move_lower
+subchild1.move_higher
 ```
