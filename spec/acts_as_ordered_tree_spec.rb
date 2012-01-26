@@ -220,6 +220,78 @@ describe ActsAsOrderedTree do
       branch.children.should have(1).items
       branch.children.first.position.should eq(1)
     end
+
+    describe "callbacks" do
+      it "should fire *_reorder callbacks when position (but not parent) changes" do
+        examples_count = 6
+
+        second_branch.should_receive(:on_before_reorder).exactly(examples_count)
+        second_branch.should_receive(:on_around_reorder).exactly(examples_count)
+        second_branch.should_receive(:on_after_reorder).exactly(examples_count)
+
+        second_branch.move_higher
+        second_branch.move_lower
+        second_branch.move_to_top
+        second_branch.move_to_bottom
+        second_branch.decrement_position
+        second_branch.increment_position
+      end
+
+      it "should not fire *_reorder callbacks when parent_changes" do
+        leaf.should_not_receive(:on_before_reorder)
+        leaf.should_not_receive(:on_around_reorder)
+        leaf.should_not_receive(:on_after_reorder)
+
+        p1 = leaf.parent
+        p2 = second_branch
+
+        leaf.move_to_child_of(p2)
+        leaf.move_to_above_of(p1.children.first)
+        leaf.move_to_child_of(p2)
+        leaf.move_to_bottom_of(p1.children.first)
+      end
+
+      it "should not fire *_reorder callbacks when position is not changed" do
+        leaf.should_not_receive(:on_before_reorder)
+        leaf.should_not_receive(:on_around_reorder)
+        leaf.should_not_receive(:on_after_reorder)
+
+        last.should_not_receive(:on_before_reorder)
+        last.should_not_receive(:on_around_reorder)
+        last.should_not_receive(:on_after_reorder)
+
+        leaf.move_higher
+        last.move_lower
+
+        leaf.save
+        last.save
+      end
+
+      it "should fire *_move callbacks when parent is changed" do
+        examples_count = 3
+        leaf.should_receive(:on_before_move).exactly(examples_count)
+        leaf.should_receive(:on_after_move).exactly(examples_count)
+        leaf.should_receive(:on_around_move).exactly(examples_count)
+
+        p1 = leaf.parent
+        p2 = second_branch
+
+        leaf.move_to_child_of(p2)
+        leaf.move_to_above_of(p1)
+        leaf.move_to_bottom_of(p1.children.first)
+      end
+
+      it "should not fire *_move callbacks when parent is not changed" do
+        leaf.should_not_receive(:on_before_move)
+        leaf.should_not_receive(:on_after_move)
+        leaf.should_not_receive(:on_around_move)
+
+        leaf.move_to_child_of(leaf.parent)
+        leaf.move_to_above_of(leaf.siblings.first)
+        leaf.move_to_bottom_of(leaf.siblings.first)
+        leaf.reload.save
+      end
+    end
   end
 
   describe "validations" do

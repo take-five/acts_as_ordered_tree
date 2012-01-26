@@ -17,9 +17,12 @@ module ActsAsOrderedTree
         end
       end
 
-      scope :roots, where(parent_column => nil).order(position_column)
+      scope :roots, where(parent_column => nil).order(quoted_position_column)
 
       validate :validate_incest
+
+      define_model_callbacks :move
+      around_update :__around_move, :if => :parent_changed?
     end
 
     # == Instance methods
@@ -83,17 +86,24 @@ module ActsAsOrderedTree
     def move_to_child_of(another_parent)
       transaction do
         self.parent = another_parent
-        save if parent_changed?
 
-        move_to_bottom
+        p_changed = parent_changed?
+        save if p_changed
+
+        skip_reorder_callbacks(p_changed) { move_to_bottom }
       end
     end
 
     # Move node to position of another node, shift down lower items
     def move_to_above_of(another_node)
+      p_changed = parent != another_node.parent
+
       transaction do
         move_to_child_of(another_node.parent)
-        insert_at(another_node[position_column])
+        
+        skip_reorder_callbacks(p_changed) do
+          insert_at(another_node[position_column])
+        end
       end
     end
 
@@ -101,14 +111,19 @@ module ActsAsOrderedTree
       transaction do
         self.parent = another_node.parent
         self[position_column] = another_node[position_column] + 1
+
         save
       end
     end
 
     protected
-    def validate_incest
+    def validate_incest #:nodoc:
       errors.add(:parent, :linked_to_self) if parent == self
       errors.add(:parent, :linked_to_descendant) if descendants.include?(parent)
+    end
+
+    def __around_move #:nodoc:
+      run_callbacks(:move) { yield }
     end
   end # module Tree
 end # module ActsAsOrderedTree

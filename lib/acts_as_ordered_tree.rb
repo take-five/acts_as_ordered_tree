@@ -20,12 +20,17 @@ module ActsAsOrderedTree
     acts_as_list :column => position_column,
                  :scope => parent_column
 
+    # acts_as_tree creates ugly associations
+    # patch them
+    children = reflect_on_association :children
+    children.options[:order] = quoted_position_column
+
     include ActsAsOrderedTree::Tree
     include ActsAsOrderedTree::List
   end # def acts_as_ordered_tree
 
   private
-      # Add ordered_tree configuration readers
+  # Add ordered_tree configuration readers
   def configure_ordered_tree(options = {}) #:nodoc:
     configuration = { :foreign_key  => :parent_id ,
                       :order        => :position  }
@@ -38,6 +43,10 @@ module ActsAsOrderedTree
 
     configuration
   end # def configure_ordered_tree
+
+  def quoted_position_column #:nodoc:
+    [quoted_table_name, connection.quote_column_name(position_column)].join('.')
+  end # def quoted_position_column
 end # module ActsAsOrderedTree
 
 ActiveRecord::Base.extend(ActsAsOrderedTree)

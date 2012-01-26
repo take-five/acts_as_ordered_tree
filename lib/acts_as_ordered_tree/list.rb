@@ -1,4 +1,5 @@
 require "active_support/concern"
+require "active_support/core_ext/object/with_options"
 
 module ActsAsOrderedTree
   module List
@@ -8,12 +9,41 @@ module ActsAsOrderedTree
       include PatchedMethods
       scope :ordered, order(position_column)
 
-      before_update :remove_from_old_list, :if => :parent_changed?
-      before_update :add_to_list_bottom, :if => :parent_changed?
+      with_options :if => :parent_changed? do |opts|
+        opts.before_update :remove_from_old_list
+        opts.before_update :add_to_list_bottom
+      end
+
+      define_model_callbacks :reorder
+      around_update :__around_reorder, :if => :position_changed?,
+                                       :unless => :parent_changed?
+    end
+
+    # Returns true if record has changes in +parent_id+
+    def position_changed?
+      changes.has_key?(position_column.to_s)
+    end
+
+    private
+    # Turn off reorder callbacks temporary
+    def skip_reorder_callbacks(skip = true) #:nodoc:
+      @skip_reorder_callbacks = skip
+      result = yield
+      @skip_reorder_callbacks = false
+
+      result
+    end
+
+    def __around_reorder #:nodoc:
+      if @skip_reorder_callbacks
+        yield
+      else
+        run_callbacks(:reorder) { yield }
+      end
     end
 
     # It should invoke callbacks, so we patch +acts_as_list+ methods
-    module PatchedMethods
+    module PatchedMethods #:nodoc:all
       private
       def remove_from_old_list
         unchanged = self.class.find(id)

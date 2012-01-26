@@ -23,6 +23,13 @@ end
 class Node < ActiveRecord::Base
   acts_as_ordered_tree
 
+  before_reorder :on_before_reorder
+  after_reorder  :on_after_reorder
+  around_reorder :on_around_reorder
+  before_move    :on_before_move
+  after_move     :on_after_move
+  around_move    :on_around_move
+
   def self.debug
     buf = StringIO.new("", "w")
 
@@ -35,4 +42,12 @@ class Node < ActiveRecord::Base
 
     print buf.string
   end
+
+  # stub
+  def on_before_reorder;end
+  def on_after_reorder;end
+  def on_around_reorder;yield end
+  def on_before_move; end
+  def on_after_move; end
+  def on_around_move; yield end
 end
