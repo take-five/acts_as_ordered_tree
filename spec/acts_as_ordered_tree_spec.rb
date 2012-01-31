@@ -196,10 +196,13 @@ describe ActsAsOrderedTree do
 
     it "should be movable to above of some node" do
       first_child = branch.children.first
+      above_of    = second_branch.children.first
 
-      first_child.move_to_above_of(second_branch.children.first)
+      first_child.move_to_above_of(above_of)
       first_child.parent.should eq(second_branch)
-      first_child.reload.position.should eq(1)
+      
+      first_child.position.should eq(1)
+      above_of.position.should eq(2)
     end
 
     it "should be movable to bottom of some node" do

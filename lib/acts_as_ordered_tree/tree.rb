@@ -91,10 +91,12 @@ module ActsAsOrderedTree
         save if p_changed
 
         skip_reorder_callbacks(p_changed) { move_to_bottom }
+
+        parent.children.reload
       end
     end
 
-    # Move node to position of another node, shift down lower items
+    # Move node to position of +another_node+, shift down lower items
     def move_to_above_of(another_node)
       p_changed = parent != another_node.parent
 
@@ -104,15 +106,21 @@ module ActsAsOrderedTree
         skip_reorder_callbacks(p_changed) do
           insert_at(another_node[position_column])
         end
+
+        another_node.parent.children.reload if another_node.parent.present?
+        another_node.reload
       end
     end
 
+    # Move node to the next of +another_node+, shift down lower items
     def move_to_bottom_of(another_node)
       transaction do
         self.parent = another_node.parent
         self[position_column] = another_node[position_column] + 1
 
         save
+        
+        another_node.parent.children.reload if another_node.parent.present?
       end
     end
 
