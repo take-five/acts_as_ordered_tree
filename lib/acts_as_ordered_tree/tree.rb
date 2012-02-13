@@ -35,6 +35,14 @@ module ActsAsOrderedTree
       end
     end
 
+    # returns a Enumerator of ancestors, including self
+    def self_and_ancestors
+      Iterator.new do |y|
+        y << self
+        ancestors.each { |a| y << a }
+      end
+    end
+
     # returns a Enumerator of node's descendants, traversing depth first
     #
     # == Example
@@ -60,6 +68,13 @@ module ActsAsOrderedTree
         end
       end
     end # def descendants
+
+    def self_and_descendants
+      Iterator.new do |y|
+        y << self
+        descendants.each { |x| y << x }
+      end
+    end
 
     # Returns depth of current node
     def depth

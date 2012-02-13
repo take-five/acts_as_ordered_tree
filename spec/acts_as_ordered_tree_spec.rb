@@ -69,12 +69,15 @@ describe ActsAsOrderedTree do
     end
 
     it "should iterate over ancestors" do
+      leaf.self_and_ancestors.should have(3).items
       leaf.ancestors.should have(2).items
       branch.ancestors.should have(1).items
       root.ancestors.should have(0).items
     end
 
     it "should iterate over descendants" do
+      root.self_and_descendants.should have(6).items
+
       root.descendants.should have(5).items
       root.descendants.first.should eq(branch)
       root.descendants.last.should eq(last)
