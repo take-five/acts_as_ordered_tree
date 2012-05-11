@@ -1,4 +1,4 @@
-require File.expand_path('../test_helper', __FILE__)
+require File.expand_path('../spec_helper', __FILE__)
 
 describe ActsAsOrderedTree::Iterator do
   let(:iterator) do

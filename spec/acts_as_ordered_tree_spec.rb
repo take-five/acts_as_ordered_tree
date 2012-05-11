@@ -1,4 +1,4 @@
-require File.expand_path('../test_helper', __FILE__)
+require File.expand_path('../spec_helper', __FILE__)
 
 describe ActsAsOrderedTree do
   before :all do
@@ -19,94 +19,87 @@ describe ActsAsOrderedTree do
   let(:blank) { Node.new(:parent_id => branch.id) }
 
   describe "class" do
-    it "should be properly configured" do
-      Node.position_column.should eq(:position)
-      Node.parent_column.should eq(:parent_id)
-    end
+    subject { Node }
 
-    it "should have roots" do
-      Node.roots.count.should eq(1)
-      Node.roots.first.should eq(root)
-      Node.root.should eq(root)
-    end
+    its(:position_column) { should eq :position }
+    its(:parent_column) { should eq :parent_id }
+
+    its(:roots) { should have(1).item }
+    its('roots.first') { should eq root }
+    its(:root) { should eq root }
   end
 
-  describe "tree" do
-    it "should have roots" do
-      root.root.should eq(root)
-      branch.root.should eq(root)
-      leaf.root.should eq(root)
-    end
+  describe "Root" do
+    subject { root }
 
-    it "should have children" do
-      root.children.count.should eq(2)
-      branch.children.count.should eq(2)
-      leaf.children.count.should eq(0)
-    end
+    its(:root) { should eq root }
+    its(:children) { should have(2).items }
+    its(:parent) { should be_nil }
 
-    it "should have parents" do
-      root.parent.should be(nil)
-      branch.parent.should eq(root)
-      leaf.parent.should eq(branch)
-    end
+    it { should be_root }
+    it { should_not be_leaf }
 
-    it "should return true if root" do
-      root.root?.should be(true)
-      branch.root?.should be(false)
-      leaf.root?.should be(false)
-    end
+    its(:depth) { should eq 0 }
+    its(:position) { should eq 1 }
+    its('children.first.position') { should eq 1 }
+    its('children.last.position') { should eq 2 }
 
-    it "should return true if leaf" do
-      root.leaf?.should be(false)
-      branch.leaf?.should be(false)
-      leaf.leaf?.should be(true)
-    end
+    its(:ancestors) { should have(0).items }
+    its(:self_and_descendants) { should have(6).items }
 
-    it "should tell about node's depth" do
-      root.depth.should eq(0)
-      branch.depth.should eq(1)
-      leaf.depth.should eq(2)
-    end
-
-    it "should iterate over ancestors" do
-      leaf.self_and_ancestors.should have(3).items
-      leaf.ancestors.should have(2).items
-      branch.ancestors.should have(1).items
-      root.ancestors.should have(0).items
-    end
-
-    it "should iterate over descendants" do
-      root.self_and_descendants.should have(6).items
-
-      root.descendants.should have(5).items
-      root.descendants.first.should eq(branch)
-      root.descendants.last.should eq(last)
-
-      branch.descendants.should have(2).items
-      branch.descendants.first.should eq(leaf)
-
-      leaf.descendants.should have(0).items
-    end
-
-    it "should have siblings" do
-      branch.self_and_siblings.should have(2).items
-      branch.self_and_siblings.should include(branch)
-
-      branch.siblings.should have(1).item
-      branch.siblings.should_not include(branch)
-    end
+    its(:descendants) { should have(5).items }
+    its('descendants.first') { should eq branch }
+    its('descendants.last') { should eq last }
   end
 
-  describe "list" do
-    it "should be ordered" do
-      root.position.should eq(1)
-      root.children.first.position.should eq(1)
-      root.children.last.position.should eq(2)
-    end
+  describe "Branch" do
+    subject { branch }
 
-    it "should be sortable through scope" do
-      Node.where(:parent_id => root.id).ordered.first.should eq(branch)
-    end
+    its(:root) { should eq root }
+    its(:children) { should have(2).items }
+    its(:parent) { should eq root }
+    it { should_not be_root }
+    it { should_not be_leaf }
+
+    its(:depth) { should eq 1 }
+    its(:position) { should eq 1 }
+
+    its(:ancestors) { should have(1).item }
+
+    its(:descendants) { should have(2).items }
+    its('descendants.first') { should eq leaf }
+
+    its(:self_and_siblings) { should have(2).items }
+    its(:self_and_siblings) { should include branch }
+
+    its(:siblings) { should have(1).item }
+    its(:siblings) { should_not include branch }
+  end
+
+  describe "Leaf" do
+    subject { leaf }
+
+    its(:root) { should eq root }
+    its(:children) { should be_empty }
+    its(:parent) { should eq branch }
+    it { should_not be_root }
+    it { should be_leaf }
+    its(:depth) { should eq 2 }
+
+    its(:self_and_ancestors) { should have(3).items }
+    its(:ancestors) { should have(2).items }
+    its('ancestors.first') { should eq branch }
+    its('ancestors.last') { should eq root }
+
+    its(:descendants) { should be_empty }
+    its(:siblings) { should have(1).item }
+  end
+
+  describe "Scope" do
+    subject { root.children.ordered }
+
+    it { should be_a ActiveRecord::Relation }
+    its(:order_values) { should include Node.position_column }
   end
 
   describe "mutations" do
@@ -118,114 +111,137 @@ describe ActsAsOrderedTree do
       end
     end
 
-    it "should be placed to the bottom of the list" do
-      blank.save
-      branch.children.last.should eq(blank)
+    context "Insertion of a new node at the end of list (by default)" do
+      subject { blank }
+
+      before { subject.save }
+
+      it { should be_persisted }
+      its(:parent) { should eq branch }
+      it { should be_last }
     end
 
-    it "should be placed to the middle of the list" do
-      blank.position = 2
-      blank.save
+    describe "Insertion of a new node at certain position" do
+      subject { blank }
 
-      blank.position.should eq(2)
-      blank.siblings.should have(2).items
-      blank.siblings.last.position.should eq(3)
+      before { subject.position = 2 }
+      before { subject.save }
+
+      it { should be_persisted }
+      its(:position) { should eq 2 }
+      it { should_not be_last }
+      it { should_not be_first }
+
+      its(:siblings) { should have(2).items }
     end
 
-    it "should be movable inside parent" do
-      last_child = branch.children.last
+    describe "Moving a node inside parent's children" do
+      let(:last_child) { branch.children.last }
 
-      blank.save
-      blank.move_higher
+      subject { blank }
 
-      blank.position.should eq(2)
-      last_child.reload.position.should eq(3)
+      before { subject.save }
 
-      blank.move_lower
-      blank.position.should eq(3)
+      describe "#move_higher" do
+        before { subject.move_higher }
+
+        its(:position) { should eq 2 }
+        its(:lower_item) { should eq last_child }
+      end
+
+      describe "#move_lower" do
+        before { subject.move_higher }
+        before { subject.move_lower }
+
+        its(:position) { should eq 3 }
+        it { should be_last }
+      end
+
+      describe "#move_to_top" do
+        before { subject.move_to_top }
+
+        it { should be_first }
+      end
+
+      describe "#move_to_bottom" do
+        before { subject.move_to_top }
+        before { subject.move_to_bottom }
+
+        it { should be_last }
+      end
     end
 
-    it "should be movable to bottom of its parent" do
-      first_child = branch.children.first
+    describe "Changing node's parent" do
+      subject { branch.children.first }
 
-      first_child.move_to_bottom
-      first_child.position.should eq(2)
-      first_child.reload.position.should eq(2)
+      let!(:sibling) { subject.siblings.first }
+
+      before { subject.parent = second_branch }
+      before { subject.save }
+
+      it "should shift up lower items" do
+        sibling.reload.position.should eq 1
+      end
+
+      it "should save its previous position" do
+        subject.position.should eq 1
+      end
     end
 
-    it "should be movable to top of its parent" do
-      first_child = branch.children.first
-      last_child = branch.children.last
+    describe "Moving node between different parents" do
+      subject { branch.children.last }
 
-      last_child.move_to_top
+      describe "#move_to_child_of" do
+        before { subject.move_to_child_of second_branch }
+        before { subject.reload }
 
-      last_child.position.should eq(1)
-      last_child.reload.position.should eq(1)
+        its(:parent) { should eq second_branch }
+        it { should be_last }
+      end
 
-      first_child.reload.position.should eq(2)
+      describe "#move_to_above_of" do
+        let!(:above_of) { second_branch.children.first }
+
+        before { subject.move_to_above_of above_of }
+
+        its(:parent) { should eq second_branch }
+        its(:position) { should eq 1 }
+
+        it "should shift down +above_of+ node" do
+          above_of.position.should eq 2
+        end
+      end
+
+      describe "#move_to_bottom_of" do
+        before { subject.move_to_bottom_of branch }
+
+        its(:parent) { should eq branch.parent }
+        its(:position) { should eq 2 }
+      end
     end
 
-    it "should shift up lower items when parent is changed" do
-      first_child = branch.children.first
-      last_child = branch.children.last
-      
-      # move to other parent
-      first_child.parent = second_branch
-      first_child.should be_parent_changed
+    describe "Destroying node" do
+      subject { branch.children }
 
-      first_child.save
+      before { subject.first.destroy }
 
-      # old sibling should shift up
-      last_child.reload.position.should eq(1)
+      it { should have(1).item }
+      its('first.position') { should eq 1 }
     end
 
-    it "should save its previous position when parent is changed" do
-      first_child = branch.children.first
 
-      first_child.parent = second_branch
-      first_child.save
+    describe "validations" do
+      it "should not allow to link parent to itself" do
+        branch.parent = branch
+        branch.should_not be_valid
+      end
 
-      first_child.position.should eq(1)
-      last.position.should eq(2)
+      it "should not allow to link to one of its descendants" do
+        branch.parent = leaf
+        branch.should_not be_valid
+      end
     end
 
-    it "should be movable to last position of new parent" do
-      first_child = branch.children.first
-
-      first_child.move_to_child_of(second_branch)
-      first_child.parent.should eq(second_branch)
-      first_child.should be_last
-    end
-
-    it "should be movable to above of some node" do
-      first_child = branch.children.first
-      above_of    = second_branch.children.first
-
-      first_child.move_to_above_of(above_of)
-      first_child.parent.should eq(second_branch)
-      
-      first_child.position.should eq(1)
-      above_of.position.should eq(2)
-    end
-
-    it "should be movable to bottom of some node" do
-      second = second_branch
-
-      first_child = branch.children.first
-
-      first_child.move_to_bottom_of(branch)
-      first_child.parent.should eq(branch.parent)
-
-      first_child.position.should eq(2)
-      second.reload.position.should eq(3)
-    end
-
-    it "should shift up lower items on destroy" do
-      branch.children.first.destroy
-
-      branch.children.should have(1).items
-      branch.children.first.position.should eq(1)
-    end
 
     describe "callbacks" do
       it "should fire *_reorder callbacks when position (but not parent) changes" do
@@ -297,18 +313,6 @@ describe ActsAsOrderedTree do
         leaf.move_to_bottom_of(leaf.siblings.first)
         leaf.reload.save
       end
-    end
-  end
-
-  describe "validations" do
-    it "should not allow to link parent to itself" do
-      branch.parent = branch
-      branch.should_not be_valid
-    end
-
-    it "should not allow to link to one of its descendants" do
-      branch.parent = leaf
-      branch.should_not be_valid
     end
   end
 end
