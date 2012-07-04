@@ -1,52 +1,74 @@
-require "enumerator"
-
 require "active_record"
-require "acts_as_list"
-require "acts_as_tree"
-
 require "acts_as_ordered_tree/version"
+require "acts_as_ordered_tree/class_methods"
+require "acts_as_ordered_tree/instance_methods"
 require "acts_as_ordered_tree/iterator"
-require "acts_as_ordered_tree/tree"
-require "acts_as_ordered_tree/list"
 
 module ActsAsOrderedTree
+  # == Usage
+  #   class Category < ActiveRecord::Base
+  #     acts_as_ordered_tree :parent_column => :parent_id,
+  #                          :position_column => :position,
+  #                          :depth_column => :depth,
+  #                          :counter_cache => :children_count
+  #   end
   def acts_as_ordered_tree(options = {})
-    configuration = configure_ordered_tree(options)
+    options = {
+      :parent_column   => :parent_id,
+      :position_column => :position,
+      :depth_column    => :depth
+    }.merge(options)
 
-    acts_as_tree :foreign_key => parent_column,
-                 :order => position_column,
-                 :counter_cache => configuration[:counter_cache]
+    class_attribute :acts_as_ordered_tree_options, :instance_writer => false
+    self.acts_as_ordered_tree_options = options
 
-    acts_as_list :column => position_column,
-                 :scope => parent_column
+    # create associations
+    has_many   :children,
+               :class_name    => name,
+               :foreign_key   => options[:parent_column],
+               :order         => options[:position_column],
+               :dependent     => :destroy,
+               :inverse_of    => (:parent unless options[:polymorphic]),
+               :before_add    => options[:before_add],
+               :after_add     => options[:after_add],
+               :before_remove => options[:before_remove],
+               :after_remove  => options[:after_remove]
 
-    # acts_as_tree creates ugly associations
-    # patch them
-    children = reflect_on_association :children
-    children.options[:order] = quoted_position_column
+    belongs_to :parent,
+               :class_name => name,
+               :foreign_key => options[:parent_column],
+               :counter_cache => options[:counter_cache],
+               :inverse_of => (:children unless options[:polymorphic])
 
-    include ActsAsOrderedTree::Tree
-    include ActsAsOrderedTree::List
+    define_model_callbacks :move, :reorder
+
+    extend  Columns
+    include Columns
+    include ClassMethods
+    include InstanceMethods
+
+    # protect position&depth from mass-assignment
+    attr_protected depth_column, position_column
   end # def acts_as_ordered_tree
 
-  private
-  # Add ordered_tree configuration readers
-  def configure_ordered_tree(options = {}) #:nodoc:
-    configuration = { :foreign_key  => :parent_id ,
-                      :order        => :position  }
-    configuration.update(options) if options.is_a?(Hash)
+  # Mixed into both classes and instances to provide easy access to the column names
+  module Columns
+    def parent_column
+      acts_as_ordered_tree_options[:parent_column]
+    end
 
-    class_attribute :parent_column, :position_column
+    def position_column
+      acts_as_ordered_tree_options[:position_column]
+    end
 
-    self.parent_column   = configuration[:foreign_key].to_sym
-    self.position_column = configuration[:order].to_sym
+    def depth_column
+      acts_as_ordered_tree_options[:depth_column]
+    end
 
-    configuration
-  end # def configure_ordered_tree
-
-  def quoted_position_column #:nodoc:
-    [quoted_table_name, connection.quote_column_name(position_column)].join('.')
-  end # def quoted_position_column
+    def children_counter_cache_column
+      reflections[:parent].counter_cache_column.try(:to_sym)
+    end
+  end
 end # module ActsAsOrderedTree
 
 ActiveRecord::Base.extend(ActsAsOrderedTree)

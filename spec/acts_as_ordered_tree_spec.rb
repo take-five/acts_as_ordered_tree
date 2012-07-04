@@ -1,318 +1,211 @@
 require File.expand_path('../spec_helper', __FILE__)
 
 describe ActsAsOrderedTree do
-  before :all do
-    root   = Node.create(:name => "Root")
-    child1 = Node.create(:parent_id => root.id, :name => "Child 1")
-    child2 = Node.create(:parent_id => root.id, :name => "Child 2")
+  describe "defaults" do
+    subject { Default }
 
-    Node.create(:parent_id => child1.id, :name => "Subchild 1")
-    Node.create(:parent_id => child1.id, :name => "Subchild 2")
-    Node.create(:parent_id => child2.id, :name => "Subchild 3")
-  end
-
-  let(:root) { Node.where(:parent_id => nil).first }
-  let(:branch) { Node.where(:parent_id => root.id).first }
-  let(:second_branch) { Node.where(:parent_id => root.id).last }
-  let(:leaf) { Node.where(:parent_id => branch.id).first }
-  let(:last) { Node.last }
-  let(:blank) { Node.new(:parent_id => branch.id) }
-
-  describe "class" do
-    subject { Node }
-
-    its(:position_column) { should eq :position }
     its(:parent_column) { should eq :parent_id }
+    its(:position_column) { should eq :position }
+    its(:depth_column) { should eq :depth }
+    its(:children_counter_cache_column) { be_nil }
 
-    its(:roots) { should have(1).item }
-    its('roots.first') { should eq root }
+    context "instance" do
+      subject { Default.new }
+
+      it { should_not allow_mass_assignment_of(:position) }
+      it { should_not allow_mass_assignment_of(:depth) }
+    end
+  end
+
+  describe "default with counter cache" do
+    subject { DefaultWithCounterCache }
+
+    its(:children_counter_cache_column) { should eq :categories_count }
+  end
+
+  describe "renamed columns" do
+    subject { RenamedColumns }
+
+    its(:parent_column) { should eq :mother_id }
+    its(:position_column) { should eq :red }
+    its(:depth_column) { should eq :pitch }
+
+    context "instance" do
+      subject { RenamedColumns.new }
+
+      it { should_not allow_mass_assignment_of(:red) }
+      it { should_not allow_mass_assignment_of(:pitch) }
+    end
+  end
+
+  it "creation_with_altered_column_names" do
+    lambda {
+      RenamedColumns.create!()
+    }.should_not raise_exception
+  end
+
+  describe ".roots" do
+    # create fixture
+    before { FactoryGirl.create_list(:default, 3) }
+
+    subject { Default.roots }
+
+    its(:entries) { should eq Default.where(:parent_id => nil).order(:position).to_a }
+  end
+
+  describe ".leaves" do
+    # create fixture
+    let(:root) { FactoryGirl.create(:default_with_counter_cache) }
+    before { FactoryGirl.create_list(:default_with_counter_cache, 2, :parent => root) }
+
+    subject { DefaultWithCounterCache }
+
+    it { should respond_to(:leaves) }
+    its(:leaves) { should have(2).items }
+  end
+
+  describe ".root" do
+    # create fixture
+    let(:root) { FactoryGirl.create :default }
+    before { FactoryGirl.create_list(:default, 3) }
+
+    subject { Default }
     its(:root) { should eq root }
   end
 
-  describe "Root" do
-    subject { root }
+  describe "#root?, #child?, #leaf? and #root" do
+    # create fixture
+    let!(:root) { FactoryGirl.create :default }
+    let!(:child) { FactoryGirl.create :default, :parent => root }
+    let!(:grandchild) { FactoryGirl.create :default, :parent => child }
 
-    its(:root) { should eq root }
-    its(:children) { should have(2).items }
-    its(:parent) { should be_nil }
+    specify { root.should be_root }
+    specify { root.should_not be_child }
+    specify { root.should_not be_leaf }
+    specify { root.root.should eq root }
+    specify { root.level.should eq 0 }
 
-    it { should be_root }
-    it { should_not be_leaf }
+    specify { child.should_not be_root }
+    specify { child.should be_child }
+    specify { child.should_not be_leaf }
+    specify { child.root.should eq root }
+    specify { child.level.should eq 1 }
 
-    its(:depth) { should eq 0 }
-    its(:position) { should eq 1 }
-    its('children.first.position') { should eq 1 }
-    its('children.last.position') { should eq 2 }
+    specify { grandchild.should_not be_root }
+    specify { grandchild.should be_child }
+    specify { grandchild.should be_leaf }
+    specify { grandchild.root.should eq root }
+    specify { grandchild.level.should eq 2 }
 
-    its(:ancestors) { should have(0).items }
-    its(:self_and_descendants) { should have(6).items }
-
-    its(:descendants) { should have(5).items }
-    its('descendants.first') { should eq branch }
-    its('descendants.last') { should eq last }
+    it "new record cannot be leaf" do
+      record = FactoryGirl.build :default
+      record.should_not be_leaf
+    end
   end
 
-  describe "Branch" do
-    subject { branch }
+  describe "#self_and_ancestors" do
+    # create fixture
+    let!(:root) { FactoryGirl.create :default }
+    let!(:child) { FactoryGirl.create :default, :parent => root }
+    let!(:grandchild) { FactoryGirl.create :default, :parent => child }
 
-    its(:root) { should eq root }
-    its(:children) { should have(2).items }
-    its(:parent) { should eq root }
-    it { should_not be_root }
-    it { should_not be_leaf }
+    context "leaf" do
+      subject { grandchild.self_and_ancestors }
 
-    its(:depth) { should eq 1 }
-    its(:position) { should eq 1 }
-
-    its(:ancestors) { should have(1).item }
-
-    its(:descendants) { should have(2).items }
-    its('descendants.first') { should eq leaf }
-
-    its(:self_and_siblings) { should have(2).items }
-    its(:self_and_siblings) { should include branch }
-
-    its(:siblings) { should have(1).item }
-    its(:siblings) { should_not include branch }
-  end
-
-  describe "Leaf" do
-    subject { leaf }
-
-    its(:root) { should eq root }
-    its(:children) { should be_empty }
-    its(:parent) { should eq branch }
-    it { should_not be_root }
-    it { should be_leaf }
-    its(:depth) { should eq 2 }
-
-    its(:self_and_ancestors) { should have(3).items }
-    its(:ancestors) { should have(2).items }
-    its('ancestors.first') { should eq branch }
-    its('ancestors.last') { should eq root }
-
-    its(:descendants) { should be_empty }
-    its(:siblings) { should have(1).item }
-  end
-
-  describe "Scope" do
-    subject { root.children.ordered }
-
-    it { should be_a ActiveRecord::Relation }
-    its(:order_values) { should include Node.position_column }
-  end
-
-  describe "mutations" do
-    around(:each) do |example|
-      Node.transaction do
-        example.run
-
-        raise ActiveRecord::Rollback
-      end
+      it { should be_a ActiveRecord::Relation }
+      it { should be_loaded }
+      it { should have(3).items }
+      its(:first) { should eq root }
+      its(:last) { should eq subject }
     end
 
-    context "Insertion of a new node at the end of list (by default)" do
-      subject { blank }
+    context "child" do
+      subject { child.self_and_ancestors }
 
-      before { subject.save }
-
-      it { should be_persisted }
-      its(:parent) { should eq branch }
-      it { should be_last }
+      it { should be_a ActiveRecord::Relation }
+      it { should be_loaded }
+      it { should have(2).items }
+      its(:first) { should eq root }
+      its(:last) { should eq subject }
     end
 
-    describe "Insertion of a new node at certain position" do
-      subject { blank }
+    context "root" do
+      subject { root.self_and_ancestors }
 
-      before { subject.position = 2 }
-      before { subject.save }
-
-      it { should be_persisted }
-      its(:position) { should eq 2 }
-      it { should_not be_last }
-      it { should_not be_first }
-
-      its(:siblings) { should have(2).items }
-    end
-
-    describe "Moving a node inside parent's children" do
-      let(:last_child) { branch.children.last }
-
-      subject { blank }
-
-      before { subject.save }
-
-      describe "#move_higher" do
-        before { subject.move_higher }
-
-        its(:position) { should eq 2 }
-        its(:lower_item) { should eq last_child }
-      end
-
-      describe "#move_lower" do
-        before { subject.move_higher }
-        before { subject.move_lower }
-
-        its(:position) { should eq 3 }
-        it { should be_last }
-      end
-
-      describe "#move_to_top" do
-        before { subject.move_to_top }
-
-        it { should be_first }
-      end
-
-      describe "#move_to_bottom" do
-        before { subject.move_to_top }
-        before { subject.move_to_bottom }
-
-        it { should be_last }
-      end
-    end
-
-    describe "Changing node's parent" do
-      subject { branch.children.first }
-
-      let!(:sibling) { subject.siblings.first }
-
-      before { subject.parent = second_branch }
-      before { subject.save }
-
-      it "should shift up lower items" do
-        sibling.reload.position.should eq 1
-      end
-
-      it "should save its previous position" do
-        subject.position.should eq 1
-      end
-    end
-
-    describe "Moving node between different parents" do
-      subject { branch.children.last }
-
-      describe "#move_to_child_of" do
-        before { subject.move_to_child_of second_branch }
-        before { subject.reload }
-
-        its(:parent) { should eq second_branch }
-        it { should be_last }
-      end
-
-      describe "#move_to_above_of" do
-        let!(:above_of) { second_branch.children.first }
-
-        before { subject.move_to_above_of above_of }
-
-        its(:parent) { should eq second_branch }
-        its(:position) { should eq 1 }
-
-        it "should shift down +above_of+ node" do
-          above_of.position.should eq 2
-        end
-      end
-
-      describe "#move_to_bottom_of" do
-        before { subject.move_to_bottom_of branch }
-
-        its(:parent) { should eq branch.parent }
-        its(:position) { should eq 2 }
-      end
-    end
-
-    describe "Destroying node" do
-      subject { branch.children }
-
-      before { subject.first.destroy }
-
+      it { should be_a ActiveRecord::Relation }
+      it { should be_loaded }
       it { should have(1).item }
-      its('first.position') { should eq 1 }
+      its(:first) { should eq root }
+    end
+  end
+
+  describe "#ancestors" do
+    # create fixture
+    let!(:root) { FactoryGirl.create :default }
+    let!(:child) { FactoryGirl.create :default, :parent => root }
+    let!(:grandchild) { FactoryGirl.create :default, :parent => child }
+
+    context "leaf" do
+      subject { grandchild.ancestors }
+
+      it { should be_a ActiveRecord::Relation }
+      it { should be_loaded }
+      it { should have(2).items }
+      its(:first) { should eq root }
+      its(:last) { should eq child }
     end
 
+    context "child" do
+      subject { child.ancestors }
 
-    describe "validations" do
-      it "should not allow to link parent to itself" do
-        branch.parent = branch
-        branch.should_not be_valid
-      end
-
-      it "should not allow to link to one of its descendants" do
-        branch.parent = leaf
-        branch.should_not be_valid
-      end
+      it { should be_a ActiveRecord::Relation }
+      it { should be_loaded }
+      it { should have(1).item }
+      its(:first) { should eq root }
     end
 
+    context "root" do
+      subject { root.ancestors }
 
-    describe "callbacks" do
-      it "should fire *_reorder callbacks when position (but not parent) changes" do
-        examples_count = 6
+      it { should be_a ActiveRecord::Relation }
+      it { should be_loaded }
+      it { should be_empty }
+    end
+  end
 
-        second_branch.should_receive(:on_before_reorder).exactly(examples_count)
-        second_branch.should_receive(:on_around_reorder).exactly(examples_count)
-        second_branch.should_receive(:on_after_reorder).exactly(examples_count)
+  describe "#self_and_descendants" do
+    # create fixture
+    let!(:root) { FactoryGirl.create :default }
+    let!(:child) { FactoryGirl.create :default, :parent => root }
+    let!(:grandchild) { FactoryGirl.create :default, :parent => child }
 
-        second_branch.move_higher
-        second_branch.move_lower
-        second_branch.move_to_top
-        second_branch.move_to_bottom
-        second_branch.decrement_position
-        second_branch.increment_position
-      end
+    context "leaf" do
+      subject { grandchild.self_and_descendants }
 
-      it "should not fire *_reorder callbacks when parent_changes" do
-        leaf.should_not_receive(:on_before_reorder)
-        leaf.should_not_receive(:on_around_reorder)
-        leaf.should_not_receive(:on_after_reorder)
+      it { should be_a ActiveRecord::Relation }
+      it { should be_loaded }
+      it { should have(1).item }
+      its(:first) { should eq grandchild }
+    end
 
-        p1 = leaf.parent
-        p2 = second_branch
+    context "child" do
+      subject { child.self_and_descendants }
 
-        leaf.move_to_child_of(p2)
-        leaf.move_to_above_of(p1.children.first)
-        leaf.move_to_child_of(p2)
-        leaf.move_to_bottom_of(p1.children.first)
-      end
+      it { should be_a ActiveRecord::Relation }
+      it { should be_loaded }
+      it { should have(2).items }
+      its(:first) { should eq child }
+      its(:last) { should eq grandchild }
+    end
 
-      it "should not fire *_reorder callbacks when position is not changed" do
-        leaf.should_not_receive(:on_before_reorder)
-        leaf.should_not_receive(:on_around_reorder)
-        leaf.should_not_receive(:on_after_reorder)
+    context "root" do
+      subject { root.self_and_descendants }
 
-        last.should_not_receive(:on_before_reorder)
-        last.should_not_receive(:on_around_reorder)
-        last.should_not_receive(:on_after_reorder)
-
-        leaf.move_higher
-        last.move_lower
-
-        leaf.save
-        last.save
-      end
-
-      it "should fire *_move callbacks when parent is changed" do
-        examples_count = 3
-        leaf.should_receive(:on_before_move).exactly(examples_count)
-        leaf.should_receive(:on_after_move).exactly(examples_count)
-        leaf.should_receive(:on_around_move).exactly(examples_count)
-
-        p1 = leaf.parent
-        p2 = second_branch
-
-        leaf.move_to_child_of(p2)
-        leaf.move_to_above_of(p1)
-        leaf.move_to_bottom_of(p1.children.first)
-      end
-
-      it "should not fire *_move callbacks when parent is not changed" do
-        leaf.should_not_receive(:on_before_move)
-        leaf.should_not_receive(:on_after_move)
-        leaf.should_not_receive(:on_around_move)
-
-        leaf.move_to_child_of(leaf.parent)
-        leaf.move_to_above_of(leaf.siblings.first)
-        leaf.move_to_bottom_of(leaf.siblings.first)
-        leaf.reload.save
-      end
+      it { should be_a ActiveRecord::Relation }
+      it { should be_loaded }
+      it { should have(3).items }
+      its(:first) { should eq root }
+      its(:last) { should eq grandchild }
     end
   end
 end

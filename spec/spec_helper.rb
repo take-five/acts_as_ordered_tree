@@ -1,53 +1,43 @@
-require File.expand_path('../../init', __FILE__)
+test_dir = File.dirname(__FILE__)
+
+require "rubygems"
+require "bundler/setup"
 
 require "rspec"
 require "rspec-expectations"
 
-require "simplecov"
-SimpleCov.start
+#require "simplecov"
+#SimpleCov.start
+
+require 'active_support'
+require 'active_model'
+require 'active_record'
+require 'action_controller'
+require 'factory_girl'
 
 require "acts_as_ordered_tree"
 require "logger"
 
-config = YAML::load(IO.read(File.dirname(__FILE__) + '/database.yml'))
-ActiveRecord::Base.establish_connection(config['database'])
+ActiveRecord::Base.establish_connection(adapter: "sqlite3", database: ":memory:")
 ActiveRecord::Base.logger = Logger.new(ENV['DEBUG'] ? $stderr : '/dev/null')
+ActiveRecord::Migration.verbose = false
+load(File.join(test_dir, "db", "schema.rb"))
 
-# Create schema
-ActiveRecord::Base.connection.create_table :nodes do |t|
-  t.integer :parent_id
-  t.integer :position
-  t.string  :name
-end
+require "erb"
+require "rspec/rails"
+require "shoulda-matchers"
+require "support/models"
+require "support/factories"
+require "support/matchers"
 
-class Node < ActiveRecord::Base
-  acts_as_ordered_tree
+RSpec.configure do |config|
+  config.use_transactional_fixtures = true
 
-  before_reorder :on_before_reorder
-  after_reorder  :on_after_reorder
-  around_reorder :on_around_reorder
-  before_move    :on_before_move
-  after_move     :on_after_move
-  around_move    :on_around_move
+  config.around :each do |example|
+    ActiveRecord::Base.transaction do
+      example.run
 
-  def self.debug
-    buf = StringIO.new("", "w")
-
-    roots.each do |n|
-      buf.puts "! #{n.name}"
-      n.descendants.each do |d|
-        buf.puts "#{' ' * d.level * 2} (##{d.id}): #{d.name} @ #{d.position}"
-      end
+      raise ActiveRecord::Rollback
     end
-
-    print buf.string
   end
-
-  # stub
-  def on_before_reorder;end
-  def on_after_reorder;end
-  def on_around_reorder;yield end
-  def on_before_move; end
-  def on_after_move; end
-  def on_around_move; yield end
 end
