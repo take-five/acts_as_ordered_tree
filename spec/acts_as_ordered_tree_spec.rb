@@ -208,4 +208,76 @@ describe ActsAsOrderedTree do
       its(:last) { should eq grandchild }
     end
   end
+
+  describe "#is_descendant_of?, #is_or_is_descendant_of?, #is_ancestor_of?, #is_or_is_ancestor_of?" do
+    # create fixture
+    let!(:root) { FactoryGirl.create :default }
+    let!(:child) { FactoryGirl.create :default, :parent => root }
+    let!(:grandchild) { FactoryGirl.create :default, :parent => child }
+
+    context "grandchild" do
+      subject { grandchild }
+
+      it { should be_is_descendant_of(root) }
+      it { should be_is_or_is_descendant_of(root) }
+      it { should_not be_is_ancestor_of(root) }
+      it { should_not be_is_or_is_ancestor_of(root) }
+
+      it { should be_is_descendant_of(child) }
+      it { should be_is_or_is_descendant_of(child) }
+      it { should_not be_is_ancestor_of(child) }
+      it { should_not be_is_or_is_ancestor_of(child) }
+
+      it { should_not be_is_descendant_of(grandchild) }
+      it { should be_is_or_is_descendant_of(grandchild) }
+      it { should_not be_is_ancestor_of(grandchild) }
+      it { should be_is_or_is_ancestor_of(grandchild) }
+    end
+
+    context "child" do
+      subject { child }
+
+      it { should be_is_descendant_of(root) }
+      it { should be_is_or_is_descendant_of(root) }
+      it { should_not be_is_ancestor_of(root) }
+      it { should_not be_is_or_is_ancestor_of(root) }
+
+      it { should_not be_is_descendant_of(child) }
+      it { should be_is_or_is_descendant_of(child) }
+      it { should_not be_is_ancestor_of(child) }
+      it { should be_is_or_is_ancestor_of(child) }
+
+      it { should_not be_is_descendant_of(grandchild) }
+      it { should_not be_is_or_is_descendant_of(grandchild) }
+      it { should be_is_ancestor_of(grandchild) }
+      it { should be_is_or_is_ancestor_of(grandchild) }
+    end
+
+    context "root" do
+      subject { root }
+
+      it { should_not be_is_descendant_of(root) }
+      it { should be_is_or_is_descendant_of(root) }
+      it { should_not be_is_ancestor_of(root) }
+      it { should be_is_or_is_ancestor_of(root) }
+
+      it { should_not be_is_descendant_of(child) }
+      it { should_not be_is_or_is_descendant_of(child) }
+      it { should be_is_ancestor_of(child) }
+      it { should be_is_or_is_ancestor_of(child) }
+
+      it { should_not be_is_descendant_of(grandchild) }
+      it { should_not be_is_or_is_descendant_of(grandchild) }
+      it { should be_is_ancestor_of(grandchild) }
+      it { should be_is_or_is_ancestor_of(grandchild) }
+    end
+  end
+
+  describe "#left_sibling" do
+    let(:items) { FactoryGirl.create_list :default, 3 }
+    subject { items }
+
+    its('first.left_sibling') { should be_nil }
+    specify { items[1].left_sibling.should eq items.first }
+  end
 end
