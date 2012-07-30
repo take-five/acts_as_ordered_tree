@@ -184,6 +184,10 @@ module ActsAsOrderedTree
       !is_or_is_ancestor_of?(target)
     end
 
+    def reload_node
+      reload(:select => "#{parent_column}, #{position_column}", :lock => true)
+    end
+
     private
     def compute_level
       ancestors.count
@@ -216,13 +220,13 @@ module ActsAsOrderedTree
         increment_lower_positions parent_id, position
 
         self.class.update_all({parent_column => parent_id, position_column => position}, {:id => id})
-        
+        self.reload_node
       end
 
       if id_was && parent_id != parent_id_was
         run_callbacks :move, &update
       else
-        update.call
+        update.()
       end
     end
 

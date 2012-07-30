@@ -67,10 +67,20 @@ describe ActsAsOrderedTree do
   describe ".root" do
     # create fixture
     let(:root) { FactoryGirl.create :default }
-    before { FactoryGirl.create_list(:default, 3) }
 
-    subject { Default }
-    its(:root) { should eq root }
+    context "single" do
+      subject { root }
+
+      its(:position) { should eq 1 }
+    end
+
+    context "list" do
+      before { root; FactoryGirl.create_list(:default, 3) }
+
+      subject { Default }
+
+      its(:root) { should eq root }
+    end
   end
 
   describe "#root?, #child?, #leaf? and #root" do
