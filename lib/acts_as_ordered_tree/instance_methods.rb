@@ -197,6 +197,8 @@ module ActsAsOrderedTree
       if target.is_a? self.class.base_class
         target.reload
       elsif pos != :root
+        raise ActiveRecord::ActiveRecordError, "Impossible move, target node cannot be nil" if target.nil?
+
         # load object if node is not an object
         target = self.class.find(target)
       end
@@ -207,7 +209,7 @@ module ActsAsOrderedTree
       parent_id, position, depth = case pos
         when :root then [nil, self.class.roots.maximum(position_column).try(:succ) || 1, 0]
         when :left then [target[parent_column], target[position_column], target.level]
-        when :right then [target[parent_column], target[position_column].succ, target.level]
+        when :right then [target[parent_column], target[position_column], target.level]
         when :child then [target.id, target.children.maximum(position_column).try(:succ) || 1, target.level.succ]
         else raise ActiveRecord::ActiveRecordError, "Position should be :child, :left, :right or :root ('#{pos}' received)."
       end
@@ -216,7 +218,7 @@ module ActsAsOrderedTree
       return if parent_id == parent_id_was && position == position_was
 
       update = proc do
-        decrement_lower_positions(parent_id_was, position_was) if position_was
+        decrement_lower_positions parent_id_was, position_was if position_was
         increment_lower_positions parent_id, position
 
         self.class.update_all({parent_column => parent_id, position_column => position}, {:id => id})

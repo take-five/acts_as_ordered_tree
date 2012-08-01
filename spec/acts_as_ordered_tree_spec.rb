@@ -66,7 +66,7 @@ describe ActsAsOrderedTree do
 
   describe ".root" do
     # create fixture
-    let(:root) { FactoryGirl.create :default }
+    let!(:root) { FactoryGirl.create :default }
 
     context "single" do
       subject { root }
@@ -75,7 +75,7 @@ describe ActsAsOrderedTree do
     end
 
     context "list" do
-      before { root; FactoryGirl.create_list(:default, 3) }
+      before { FactoryGirl.create_list(:default, 3) }
 
       subject { Default }
 
@@ -288,6 +288,111 @@ describe ActsAsOrderedTree do
     subject { items }
 
     its('first.left_sibling') { should be_nil }
-    specify { items[1].left_sibling.should eq items.first }
+    specify { items[1].left_sibling.should eq items[0] }
+    specify { items[2].left_sibling.should eq items[1] }
   end
+
+  describe "#right_sibling" do
+    let(:items) { FactoryGirl.create_list :default, 3 }
+    subject { items }
+
+    its('last.right_sibling') { should be_nil }
+    specify { items[0].right_sibling.should eq items[1] }
+    specify { items[1].right_sibling.should eq items[2] }
+  end
+
+  describe "#reload_node" do
+    let!(:node) { FactoryGirl.create :default }
+
+    before do
+      node.name = 'changed'
+      node.parent_id = 200
+      node.position = 1000
+    end
+
+    subject { node.reload_node }
+
+    its(:name) { should eq 'changed' }
+    its(:parent_id) { should be_nil }
+    its(:position) { should eq 1 }
+  end
+
+  context "move actions" do
+    let!(:root) { FactoryGirl.create :default }
+    let!(:child_1) { FactoryGirl.create :default, :parent => root }
+    let!(:child_2) { FactoryGirl.create :default, :parent => root }
+    let!(:child_3) { FactoryGirl.create :default, :parent => root }
+
+    it "initial" do
+      [child_1, child_2, child_3].map(&:position).should eq [1, 2, 3]
+    end
+
+    describe "#move_left" do
+      it "move_1_left" do
+        ->{ child_1.move_left }.should raise_exception ActiveRecord::ActiveRecordError
+        child_1.reload; child_2.reload; child_3.reload
+        [child_1, child_2, child_3].map(&:position).should eq [1, 2, 3]
+      end
+
+      it "move_2_left" do
+        child_2.move_left
+        child_1.reload; child_2.reload; child_3.reload
+        [child_2, child_1, child_3].map(&:position).should eq [1, 2, 3]
+      end
+
+      it "move_3_left" do
+        child_3.move_left
+        child_1.reload; child_2.reload; child_3.reload
+        [child_1, child_3, child_2].map(&:position).should eq [1, 2, 3]
+      end
+    end
+
+    describe "#move_right" do
+      it "move_3_right" do
+        ->{ child_3.move_right }.should raise_exception ActiveRecord::ActiveRecordError
+      end
+
+      it "move_2_right" do
+        child_2.move_right
+        child_1.reload; child_2.reload; child_3.reload
+        [child_1, child_3, child_2].map(&:position).should eq [1, 2, 3]
+      end
+
+      it "move_1_right" do
+        child_1.move_right
+        child_1.reload; child_2.reload; child_3.reload
+        [child_2, child_1, child_3].map(&:position).should eq [1, 2, 3]
+      end
+    end
+
+    describe "#move_to_left_of" do
+      it "move_3_to_left_of_1" do
+        child_3.move_to_left_of child_1
+        child_1.reload; child_2.reload; child_3.reload
+        [child_3, child_1, child_2].map(&:position).should eq [1, 2, 3]
+      end
+
+      it "move_3_to_left_of_2" do
+        child_3.move_to_left_of child_2
+        child_1.reload; child_2.reload; child_3.reload
+        [child_1, child_3, child_2].map(&:position).should eq [1, 2, 3]
+      end
+
+      it "move_1_to_left_of_3" do
+        child_1.move_to_left_of child_3
+        child_1.reload; child_2.reload; child_3.reload
+        [child_2, child_1, child_3].map(&:position).should eq [1, 2, 3]
+      end
+    end
+
+    describe "#move_to_right_of" do
+      it "move_1_to_right_of_2" do
+        child_1.move_to_right_of child_2
+        child_1.reload; child_2.reload; child_3.reload
+        [child_2, child_1, child_3].map(&:position).should eq [1, 2, 3]
+      end
+    end
+
+  end
+
 end
