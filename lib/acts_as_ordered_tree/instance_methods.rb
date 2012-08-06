@@ -207,9 +207,9 @@ module ActsAsOrderedTree
       parent_id_was = send "#{parent_column}_was".intern
 
       parent_id, position, depth = case pos
-        when :root then [nil, self.class.roots.maximum(position_column).try(:succ) || 1, 0]
-        when :left then [target[parent_column], target[position_column], target.level]
-        when :right then [target[parent_column], target[position_column], target.level]
+        when :root  then [nil, self.class.roots.maximum(position_column).try(:succ) || 1, 0]
+        when :left  then [target[parent_column], target[parent_column] == self.parent_id && target[position_column] > position_was ? target[position_column] - 1 : target[position_column], target.level]
+        when :right then [target[parent_column], target[parent_column] != self.parent_id || target[position_column] < position_was ? target[position_column] + 1 : target[position_column], target.level]
         when :child then [target.id, target.children.maximum(position_column).try(:succ) || 1, target.level.succ]
         else raise ActiveRecord::ActiveRecordError, "Position should be :child, :left, :right or :root ('#{pos}' received)."
       end

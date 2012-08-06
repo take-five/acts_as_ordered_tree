@@ -318,81 +318,154 @@ describe ActsAsOrderedTree do
   end
 
   context "move actions" do
-    let!(:root) { FactoryGirl.create :default }
-    let!(:child_1) { FactoryGirl.create :default, :parent => root }
-    let!(:child_2) { FactoryGirl.create :default, :parent => root }
-    let!(:child_3) { FactoryGirl.create :default, :parent => root }
+    let!(:root) { FactoryGirl.create :default, :name => 'root' }
+    let!(:child_1) { FactoryGirl.create :default, :parent => root, :name => 'child_1' }
+    let!(:child_2) { FactoryGirl.create :default, :parent => root, :name => 'child_2' }
+    let!(:child_3) { FactoryGirl.create :default, :parent => root, :name => 'child_3' }
 
-    it "initial" do
-      [child_1, child_2, child_3].map(&:position).should eq [1, 2, 3]
+    sorted_childs = proc do |*childs|
+      childs.sort { |c1, c2| c1.reload_node.position <=> c2.reload_node.position }.map(&:name)
+    end
+
+    context "initial" do
+      specify { sorted_childs.(child_1, child_2, child_3).should eq %w(child_1 child_2 child_3) }
+      specify { root.parent_id.should be_nil }
+      specify { root.level.should be_zero }
+      specify { root.position.should eq 1 }
     end
 
     describe "#move_left" do
       it "move_1_left" do
         ->{ child_1.move_left }.should raise_exception ActiveRecord::ActiveRecordError
-        child_1.reload; child_2.reload; child_3.reload
-        [child_1, child_2, child_3].map(&:position).should eq [1, 2, 3]
+        sorted_childs.(child_1, child_2, child_3).should eq %w(child_1 child_2 child_3)
       end
 
       it "move_2_left" do
         child_2.move_left
-        child_1.reload; child_2.reload; child_3.reload
-        [child_2, child_1, child_3].map(&:position).should eq [1, 2, 3]
+        sorted_childs.(child_1, child_2, child_3).should eq %w(child_2 child_1 child_3)
       end
 
       it "move_3_left" do
         child_3.move_left
-        child_1.reload; child_2.reload; child_3.reload
-        [child_1, child_3, child_2].map(&:position).should eq [1, 2, 3]
+        sorted_childs.(child_1, child_2, child_3).should eq %w(child_1 child_3 child_2)
       end
     end
 
     describe "#move_right" do
       it "move_3_right" do
         ->{ child_3.move_right }.should raise_exception ActiveRecord::ActiveRecordError
+        sorted_childs.(child_1, child_2, child_3).should eq %w(child_1 child_2 child_3)
       end
 
       it "move_2_right" do
         child_2.move_right
-        child_1.reload; child_2.reload; child_3.reload
-        [child_1, child_3, child_2].map(&:position).should eq [1, 2, 3]
+        sorted_childs.(child_1, child_2, child_3).should eq %w(child_1 child_3 child_2)
       end
 
       it "move_1_right" do
         child_1.move_right
-        child_1.reload; child_2.reload; child_3.reload
-        [child_2, child_1, child_3].map(&:position).should eq [1, 2, 3]
+        sorted_childs.(child_1, child_2, child_3).should eq %w(child_2 child_1 child_3)
       end
     end
 
     describe "#move_to_left_of" do
       it "move_3_to_left_of_1" do
         child_3.move_to_left_of child_1
-        child_1.reload; child_2.reload; child_3.reload
-        [child_3, child_1, child_2].map(&:position).should eq [1, 2, 3]
+        sorted_childs.(child_1, child_2, child_3).should eq %w(child_3 child_1 child_2)
       end
 
       it "move_3_to_left_of_2" do
         child_3.move_to_left_of child_2
-        child_1.reload; child_2.reload; child_3.reload
-        [child_1, child_3, child_2].map(&:position).should eq [1, 2, 3]
+        sorted_childs.(child_1, child_2, child_3).should eq %w(child_1 child_3 child_2)
       end
 
       it "move_1_to_left_of_3" do
         child_1.move_to_left_of child_3
-        child_1.reload; child_2.reload; child_3.reload
-        [child_2, child_1, child_3].map(&:position).should eq [1, 2, 3]
+        sorted_childs.(child_1, child_2, child_3).should eq %w(child_2 child_1 child_3)
       end
     end
 
     describe "#move_to_right_of" do
       it "move_1_to_right_of_2" do
         child_1.move_to_right_of child_2
-        child_1.reload; child_2.reload; child_3.reload
-        [child_2, child_1, child_3].map(&:position).should eq [1, 2, 3]
+        sorted_childs.(child_1, child_2, child_3).should eq %w(child_2 child_1 child_3)
+      end
+
+      it "move_1_to_right_of_3" do
+        child_1.move_to_right_of child_3
+        sorted_childs.(child_1, child_2, child_3).should eq %w(child_2 child_3 child_1)
+      end
+
+      it "move_3_to_right_of_1" do
+        child_3.move_to_right_of child_1
+        sorted_childs.(child_1, child_2, child_3).should eq %w(child_1 child_3 child_2)
       end
     end
 
-  end
+    describe "#move_to_root" do
+      before { child_2.move_to_root }
 
+      context "root" do
+        subject { child_2.reload_node }
+
+        its(:level) { should be_zero }
+        its(:parent_id) { should be_nil }
+        its(:position) { should eq 2 }
+        it { Default.root.should eq root }
+      end
+
+      context "childs" do
+        specify { child_1.reload_node.position.should eq 1 }
+        specify { child_3.reload_node.position.should eq 2 }
+      end
+    end
+
+    describe "#move_to_child_of" do
+      let(:moved_child) { FactoryGirl.create :default, :name => 'moved_child' }
+
+      before { moved_child.move_to_child_of root }
+      context "moved_child" do
+        subject { moved_child }
+        its(:level) { should eq 1 }
+        its(:position) { should eq 4 }
+      end
+
+      context "root" do
+        subject { root }
+        its(:right_sibling) { should be_nil }
+      end
+
+      specify { sorted_childs.(child_1, child_2, child_3, moved_child).should eq %w(child_1 child_2 child_3 moved_child) }
+    end
+
+    describe "#move_to_child_with_index" do
+      let(:moved_child) { FactoryGirl.create :default, :name => 'moved_child' }
+
+      it "move_to_child_as_first" do
+        moved_child.move_to_child_with_index root, 0
+        sorted_childs.(child_1, child_2, child_3, moved_child).should eq %w(moved_child child_1 child_2 child_3)
+        moved_child.position.should eq 1
+      end
+
+      it "move_to_child_as_second" do
+        moved_child.move_to_child_with_index root, 1
+        sorted_childs.(child_1, child_2, child_3, moved_child).should eq %w(child_1 moved_child child_2 child_3)
+        moved_child.position.should eq 2
+      end
+
+      it "move_to_child_as_third" do
+        moved_child.move_to_child_with_index root, 2
+        sorted_childs.(child_1, child_2, child_3, moved_child).should eq %w(child_1 child_2 moved_child child_3)
+        moved_child.position.should eq 3
+      end
+
+      it "move_to_child_as_last" do
+        moved_child.move_to_child_with_index root, 3
+        sorted_childs.(child_1, child_2, child_3, moved_child).should eq %w(child_1 child_2 child_3 moved_child)
+        moved_child.position.should eq 4
+      end
+
+    end
+
+  end
 end
