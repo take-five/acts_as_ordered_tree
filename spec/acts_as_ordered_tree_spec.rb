@@ -383,6 +383,10 @@ describe ActsAsOrderedTree do
         child_1.move_to_left_of child_3
         sorted_childs.(child_1, child_2, child_3).should eq %w(child_2 child_1 child_3)
       end
+
+      it "move_root_to_left_of_child_2" do
+        ->{ root.move_to_left_of child_2 }.should raise_exception ActiveRecord::ActiveRecordError
+      end
     end
 
     describe "#move_to_right_of" do
@@ -399,6 +403,10 @@ describe ActsAsOrderedTree do
       it "move_3_to_right_of_1" do
         child_3.move_to_right_of child_1
         sorted_childs.(child_1, child_2, child_3).should eq %w(child_1 child_3 child_2)
+      end
+
+      it "move_root_to_right_of_child_2" do
+        ->{ root.move_to_right_of child_2 }.should raise_exception ActiveRecord::ActiveRecordError
       end
     end
 
@@ -418,6 +426,8 @@ describe ActsAsOrderedTree do
         specify { child_1.reload_node.position.should eq 1 }
         specify { child_3.reload_node.position.should eq 2 }
       end
+
+      specify { ->{ root.move_to_root }.should raise_exception ActiveRecord::ActiveRecordError }
     end
 
     describe "#move_to_child_of" do
@@ -436,6 +446,8 @@ describe ActsAsOrderedTree do
       end
 
       specify { sorted_childs.(child_1, child_2, child_3, moved_child).should eq %w(child_1 child_2 child_3 moved_child) }
+      specify { ->{ root.move_to_child_of root }.should raise_exception ActiveRecord::ActiveRecordError }
+      specify { ->{ root.move_to_child_of child_1 }.should raise_exception ActiveRecord::ActiveRecordError }
     end
 
     describe "#move_to_child_with_index" do
@@ -465,7 +477,47 @@ describe ActsAsOrderedTree do
         moved_child.position.should eq 4
       end
 
+      it "move_child_to_root_as_first" do
+        child_3.move_to_child_with_index nil, 0
+        child_3.level.should be_zero
+        sorted_childs.(root, moved_child, child_3).should eq %w(child_3 root moved_child)
+        sorted_childs.(child_1, child_2).should eq %w(child_1 child_2)
+        child_2.right_sibling.should be_nil
+      end
+
+      it "move_to_child_with_large_index" do
+        moved_child.move_to_child_with_index root, 100
+        sorted_childs.(child_1, child_2, child_3, moved_child).should eq %w(child_1 child_2 child_3 moved_child)
+        moved_child.position.should eq 4
+      end
+
+      it "move_to_child_with_negative_index" do
+        moved_child.move_to_child_with_index root, -2
+        sorted_childs.(child_1, child_2, child_3, moved_child).should eq %w(child_1 child_2 moved_child child_3)
+        moved_child.position.should eq 3
+      end
+
+      it "move_root_to_child_of_self" do
+        ->{ root.move_to_child_with_index child_1, 1 }.should raise_exception ActiveRecord::ActiveRecordError
+      end
+
+    end
+
+    describe "callbacks" do
+      before do
+        Default.any_instance.stub(:callback_test)
+        Default.before_move "callback_test(:before)"
+        Default.before_move "callback_test(:after)"
+      end
+
+      specify "move_node_to_another_level_should_raise_callbacks" do
+        child_3.should_receive(:callback_test).with(:before).once
+        child_3.should_receive(:callback_test).with(:after).once
+        child_3.move_to_root
+      end
+
     end
 
   end
+
 end
