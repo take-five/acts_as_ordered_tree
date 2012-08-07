@@ -182,7 +182,7 @@ module ActsAsOrderedTree
     end
 
     def move_possible?(target)
-      self != target && !is_or_is_ancestor_of?(target)
+      !is_or_is_ancestor_of?(target)
     end
 
     private
