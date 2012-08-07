@@ -55,8 +55,8 @@ describe ActsAsOrderedTree do
 
   describe ".leaves" do
     # create fixture
-    let(:root) { FactoryGirl.create(:default_with_counter_cache) }
-    before { FactoryGirl.create_list(:default_with_counter_cache, 2, :parent => root) }
+    let(:root) { create :default_with_counter_cache }
+    before { create_list :default_with_counter_cache, 2, :parent => root }
 
     subject { DefaultWithCounterCache }
 
@@ -66,7 +66,7 @@ describe ActsAsOrderedTree do
 
   describe ".root" do
     # create fixture
-    let!(:root) { FactoryGirl.create :default }
+    let!(:root) { create :default }
 
     context "given a single root node" do
       subject { root }
@@ -75,7 +75,7 @@ describe ActsAsOrderedTree do
     end
 
     context "given multiple root nodes" do
-      before { FactoryGirl.create_list(:default, 3) }
+      before { create_list :default, 3 }
 
       subject { Default }
 
@@ -84,40 +84,68 @@ describe ActsAsOrderedTree do
   end
 
   describe "#root?, #child?, #leaf? and #root" do
-    # create fixture
-    let!(:root) { FactoryGirl.create :default }
-    let!(:child) { FactoryGirl.create :default, :parent => root }
-    let!(:grandchild) { FactoryGirl.create :default, :parent => child }
+    shared_examples "tree with predicates" do |factory_name|
+      # create fixture
+      let!(:root) { create factory_name }
+      let!(:child) { create factory_name, :parent => root }
+      let!(:grandchild) { create factory_name, :parent => child }
 
-    specify { root.should be_root }
-    specify { root.should_not be_child }
-    specify { root.should_not be_leaf }
-    specify { root.root.should eq root }
-    specify { root.level.should eq 0 }
+      specify { root.should be_root }
+      specify { root.should_not be_child }
+      specify { root.should_not be_leaf }
+      specify { root.root.should eq root }
+      specify { root.level.should eq 0 }
 
-    specify { child.should_not be_root }
-    specify { child.should be_child }
-    specify { child.should_not be_leaf }
-    specify { child.root.should eq root }
-    specify { child.level.should eq 1 }
+      specify { child.should_not be_root }
+      specify { child.should be_child }
+      specify { child.should_not be_leaf }
+      specify { child.root.should eq root }
+      specify { child.level.should eq 1 }
 
-    specify { grandchild.should_not be_root }
-    specify { grandchild.should be_child }
-    specify { grandchild.should be_leaf }
-    specify { grandchild.root.should eq root }
-    specify { grandchild.level.should eq 2 }
+      specify { grandchild.should_not be_root }
+      specify { grandchild.should be_child }
+      specify { grandchild.should be_leaf }
+      specify { grandchild.root.should eq root }
+      specify { grandchild.level.should eq 2 }
 
-    it "new record cannot be leaf" do
-      record = FactoryGirl.build :default
-      record.should_not be_leaf
+      it "new record cannot be leaf" do
+        record = build factory_name
+        record.should_not be_leaf
+      end
+    end
+
+    it_behaves_like "tree with predicates", :default
+    it_behaves_like "tree with predicates", :default_with_counter_cache
+  end
+
+  describe "#level" do
+    context "given a persistent root node" do
+      subject { create :default }
+
+      its(:level) { should eq 0 }
+    end
+    context "given a new root record" do
+      subject { build :default }
+
+      its(:level) { should eq 0 }
+    end
+    context "given a persistent node with parent" do
+      let(:root) { create :default }
+      subject { create :default, :parent => root }
+      its(:level) { should eq 1 }
+    end
+    context "given a new node with parent" do
+      let(:root) { create :default }
+      subject { build :default, :parent => root }
+      its(:level) { should eq 1 }
     end
   end
 
   describe "#self_and_ancestors" do
     # create fixture
-    let!(:root) { FactoryGirl.create :default }
-    let!(:child) { FactoryGirl.create :default, :parent => root }
-    let!(:grandchild) { FactoryGirl.create :default, :parent => child }
+    let!(:root) { create :default }
+    let!(:child) { create :default, :parent => root }
+    let!(:grandchild) { create :default, :parent => child }
 
     context "leaf" do
       subject { grandchild.self_and_ancestors }
@@ -151,9 +179,9 @@ describe ActsAsOrderedTree do
 
   describe "#ancestors" do
     # create fixture
-    let!(:root) { FactoryGirl.create :default }
-    let!(:child) { FactoryGirl.create :default, :parent => root }
-    let!(:grandchild) { FactoryGirl.create :default, :parent => child }
+    let!(:root) { create :default }
+    let!(:child) { create :default, :parent => root }
+    let!(:grandchild) { create :default, :parent => child }
 
     context "leaf" do
       subject { grandchild.ancestors }
@@ -185,9 +213,9 @@ describe ActsAsOrderedTree do
 
   describe "#self_and_descendants" do
     # create fixture
-    let!(:root) { FactoryGirl.create :default }
-    let!(:child) { FactoryGirl.create :default, :parent => root }
-    let!(:grandchild) { FactoryGirl.create :default, :parent => child }
+    let!(:root) { create :default }
+    let!(:child) { create :default, :parent => root }
+    let!(:grandchild) { create :default, :parent => child }
 
     context "leaf" do
       subject { grandchild.self_and_descendants }
@@ -221,9 +249,9 @@ describe ActsAsOrderedTree do
 
   describe "#is_descendant_of?, #is_or_is_descendant_of?, #is_ancestor_of?, #is_or_is_ancestor_of?" do
     # create fixture
-    let!(:root) { FactoryGirl.create :default }
-    let!(:child) { FactoryGirl.create :default, :parent => root }
-    let!(:grandchild) { FactoryGirl.create :default, :parent => child }
+    let!(:root) { create :default }
+    let!(:child) { create :default, :parent => root }
+    let!(:grandchild) { create :default, :parent => child }
 
     context "grandchild" do
       subject { grandchild }
@@ -284,7 +312,7 @@ describe ActsAsOrderedTree do
   end
 
   describe "#left_sibling" do
-    let(:items) { FactoryGirl.create_list :default, 3 }
+    let(:items) { create_list :default, 3 }
     subject { items }
 
     its('first.left_sibling') { should be_nil }
@@ -293,7 +321,7 @@ describe ActsAsOrderedTree do
   end
 
   describe "#right_sibling" do
-    let(:items) { FactoryGirl.create_list :default, 3 }
+    let(:items) { create_list :default, 3 }
     subject { items }
 
     its('last.right_sibling') { should be_nil }
@@ -302,7 +330,7 @@ describe ActsAsOrderedTree do
   end
 
   describe "#reload_node" do
-    let!(:node) { FactoryGirl.create :default }
+    let!(:node) { create :default }
 
     before do
       node.name = 'changed'
@@ -318,17 +346,17 @@ describe ActsAsOrderedTree do
   end
 
   context "move actions" do
-    let!(:root) { FactoryGirl.create :default, :name => 'root' }
-    let!(:child_1) { FactoryGirl.create :default, :parent => root, :name => 'child_1' }
-    let!(:child_2) { FactoryGirl.create :default, :parent => root, :name => 'child_2' }
-    let!(:child_3) { FactoryGirl.create :default, :parent => root, :name => 'child_3' }
+    let!(:root) { create :default, :name => 'root' }
+    let!(:child_1) { create :default, :parent => root, :name => 'child_1' }
+    let!(:child_2) { create :default, :parent => root, :name => 'child_2' }
+    let!(:child_3) { create :default, :parent => root, :name => 'child_3' }
 
-    sorted_childs = proc do |*childs|
+    sorted_children = proc do |*childs|
       childs.sort { |c1, c2| c1.reload.position <=> c2.reload.position }.map(&:name)
     end
 
     context "initial" do
-      specify { sorted_childs.(child_1, child_2, child_3).should eq %w(child_1 child_2 child_3) }
+      specify { expect(sorted_children[child_1, child_2, child_3]).to eq %w(child_1 child_2 child_3) }
       specify { root.parent_id.should be_nil }
       specify { root.level.should be_zero }
       specify { root.position.should eq 1 }
@@ -336,77 +364,87 @@ describe ActsAsOrderedTree do
 
     describe "#move_left" do
       it "move_1_left" do
-        ->{ child_1.move_left }.should raise_exception ActiveRecord::ActiveRecordError
-        sorted_childs.(child_1, child_2, child_3).should eq %w(child_1 child_2 child_3)
+        expect{ child_1.move_left }.to raise_exception ActiveRecord::ActiveRecordError
+        expect(sorted_children[child_1, child_2, child_3]).to eq %w(child_1 child_2 child_3)
       end
 
       it "move_2_left" do
         child_2.move_left
-        sorted_childs.(child_1, child_2, child_3).should eq %w(child_2 child_1 child_3)
+        expect(sorted_children[child_1, child_2, child_3]).to eq %w(child_2 child_1 child_3)
       end
 
       it "move_3_left" do
         child_3.move_left
-        sorted_childs.(child_1, child_2, child_3).should eq %w(child_1 child_3 child_2)
+        expect(sorted_children[child_1, child_2, child_3]).to eq %w(child_1 child_3 child_2)
       end
     end
 
     describe "#move_right" do
       it "move_3_right" do
-        ->{ child_3.move_right }.should raise_exception ActiveRecord::ActiveRecordError
-        sorted_childs.(child_1, child_2, child_3).should eq %w(child_1 child_2 child_3)
+        expect{ child_3.move_right }.to raise_exception ActiveRecord::ActiveRecordError
+        expect(sorted_children[child_1, child_2, child_3]).to eq %w(child_1 child_2 child_3)
       end
 
       it "move_2_right" do
         child_2.move_right
-        sorted_childs.(child_1, child_2, child_3).should eq %w(child_1 child_3 child_2)
+        expect(sorted_children[child_1, child_2, child_3]).to eq %w(child_1 child_3 child_2)
       end
 
       it "move_1_right" do
         child_1.move_right
-        sorted_childs.(child_1, child_2, child_3).should eq %w(child_2 child_1 child_3)
+        expect(sorted_children[child_1, child_2, child_3]).to eq %w(child_2 child_1 child_3)
       end
     end
 
     describe "#move_to_left_of" do
       it "move_3_to_left_of_1" do
         child_3.move_to_left_of child_1
-        sorted_childs.(child_1, child_2, child_3).should eq %w(child_3 child_1 child_2)
+        expect(sorted_children[child_1, child_2, child_3]).to eq %w(child_3 child_1 child_2)
       end
 
       it "move_3_to_left_of_2" do
         child_3.move_to_left_of child_2
-        sorted_childs.(child_1, child_2, child_3).should eq %w(child_1 child_3 child_2)
+        expect(sorted_children[child_1, child_2, child_3]).to eq %w(child_1 child_3 child_2)
       end
 
       it "move_1_to_left_of_3" do
         child_1.move_to_left_of child_3
-        sorted_childs.(child_1, child_2, child_3).should eq %w(child_2 child_1 child_3)
+        expect(sorted_children[child_1, child_2, child_3]).to eq %w(child_2 child_1 child_3)
+      end
+
+      it "move_1_to_left_of_3_id" do
+        child_1.move_to_left_of child_3.id
+        expect(sorted_children[child_1, child_2, child_3]).to eq %w(child_2 child_1 child_3)
       end
 
       it "move_root_to_left_of_child_2" do
-        ->{ root.move_to_left_of child_2 }.should raise_exception ActiveRecord::ActiveRecordError
+        expect{ root.move_to_left_of child_2 }.to raise_exception ActiveRecord::ActiveRecordError
       end
     end
 
     describe "#move_to_right_of" do
       it "move_1_to_right_of_2" do
         child_1.move_to_right_of child_2
-        sorted_childs.(child_1, child_2, child_3).should eq %w(child_2 child_1 child_3)
+        expect(sorted_children[child_1, child_2, child_3]).to eq %w(child_2 child_1 child_3)
       end
 
       it "move_1_to_right_of_3" do
         child_1.move_to_right_of child_3
-        sorted_childs.(child_1, child_2, child_3).should eq %w(child_2 child_3 child_1)
+        expect(sorted_children[child_1, child_2, child_3]).to eq %w(child_2 child_3 child_1)
+      end
+
+      it "move_1_to_right_of_3_id" do
+        child_1.move_to_right_of child_3.id
+        expect(sorted_children[child_1, child_2, child_3]).to eq %w(child_2 child_3 child_1)
       end
 
       it "move_3_to_right_of_1" do
         child_3.move_to_right_of child_1
-        sorted_childs.(child_1, child_2, child_3).should eq %w(child_1 child_3 child_2)
+        expect(sorted_children[child_1, child_2, child_3]).to eq %w(child_1 child_3 child_2)
       end
 
       it "move_root_to_right_of_child_2" do
-        ->{ root.move_to_right_of child_2 }.should raise_exception ActiveRecord::ActiveRecordError
+        expect{ root.move_to_right_of child_2 }.to raise_exception ActiveRecord::ActiveRecordError
       end
     end
 
@@ -425,7 +463,7 @@ describe ActsAsOrderedTree do
         end
       end
 
-      context "other_childs" do
+      context "other_children" do
         specify { child_1.reload.position.should eq 1 }
         specify { child_3.reload.position.should eq 2 }
       end
@@ -437,13 +475,13 @@ describe ActsAsOrderedTree do
         its(:position) { should eq 1 }
 
         it "positions should not change" do
-          sorted_childs.(root, child_3).should eq %w(root child_3)
+          expect(sorted_children[root, child_3]).to eq %w(root child_3)
         end
       end
     end
 
     describe "#move_to_child_of" do
-      let(:moved_child) { FactoryGirl.create :default, :name => 'moved_child' }
+      let(:moved_child) { create :default, :name => 'moved_child' }
 
       before { moved_child.move_to_child_of root }
       context "moved_child" do
@@ -457,95 +495,99 @@ describe ActsAsOrderedTree do
         its(:right_sibling) { should be_nil }
       end
 
-      specify { sorted_childs.(child_1, child_2, child_3, moved_child).should eq %w(child_1 child_2 child_3 moved_child) }
-      specify { ->{ root.move_to_child_of root }.should raise_exception ActiveRecord::ActiveRecordError }
-      specify { ->{ root.move_to_child_of child_1 }.should raise_exception ActiveRecord::ActiveRecordError }
+      it { expect(sorted_children[child_1, child_2, child_3, moved_child]).to eq %w(child_1 child_2 child_3 moved_child) }
+      it { expect{ root.move_to_child_of root }.to raise_exception ActiveRecord::ActiveRecordError }
+      it { expect{ root.move_to_child_of child_1 }.to raise_exception ActiveRecord::ActiveRecordError }
     end
 
     describe "#move_to_child_with_index" do
-      let(:moved_child) { FactoryGirl.create :default, :name => 'moved_child' }
+      let(:moved_child) { create :default, :name => 'moved_child' }
 
       it "move_to_child_as_first" do
         moved_child.move_to_child_with_index root, 0
-        sorted_childs.(child_1, child_2, child_3, moved_child).should eq %w(moved_child child_1 child_2 child_3)
+        expect(sorted_children[child_1, child_2, child_3, moved_child]).to eq %w(moved_child child_1 child_2 child_3)
         moved_child.position.should eq 1
       end
 
       it "move_to_child_as_second" do
         moved_child.move_to_child_with_index root, 1
-        sorted_childs.(child_1, child_2, child_3, moved_child).should eq %w(child_1 moved_child child_2 child_3)
+        expect(sorted_children[child_1, child_2, child_3, moved_child]).to eq %w(child_1 moved_child child_2 child_3)
         moved_child.position.should eq 2
       end
 
       it "move_to_child_as_third" do
         moved_child.move_to_child_with_index root, 2
-        sorted_childs.(child_1, child_2, child_3, moved_child).should eq %w(child_1 child_2 moved_child child_3)
+        expect(sorted_children[child_1, child_2, child_3, moved_child]).to eq %w(child_1 child_2 moved_child child_3)
         moved_child.position.should eq 3
       end
 
       it "move_to_child_as_last" do
         moved_child.move_to_child_with_index root, 3
-        sorted_childs.(child_1, child_2, child_3, moved_child).should eq %w(child_1 child_2 child_3 moved_child)
+        expect(sorted_children[child_1, child_2, child_3, moved_child]).to eq %w(child_1 child_2 child_3 moved_child)
         moved_child.position.should eq 4
       end
 
       it "move_child_to_root_as_first" do
         child_3.move_to_child_with_index nil, 0
         child_3.level.should be_zero
-        sorted_childs.(root, moved_child, child_3).should eq %w(child_3 root moved_child)
-        sorted_childs.(child_1, child_2).should eq %w(child_1 child_2)
+        expect(sorted_children[root, moved_child, child_3]).to eq %w(child_3 root moved_child)
+        expect(sorted_children[child_1, child_2]).to eq %w(child_1 child_2)
         child_2.right_sibling.should be_nil
       end
 
       it "move_to_child_with_large_index" do
         moved_child.move_to_child_with_index root, 100
-        sorted_childs.(child_1, child_2, child_3, moved_child).should eq %w(child_1 child_2 child_3 moved_child)
+        expect(sorted_children[child_1, child_2, child_3, moved_child]).to eq %w(child_1 child_2 child_3 moved_child)
         moved_child.position.should eq 4
       end
 
       it "move_to_child_with_negative_index" do
         moved_child.move_to_child_with_index root, -2
-        sorted_childs.(child_1, child_2, child_3, moved_child).should eq %w(child_1 child_2 moved_child child_3)
+        expect(sorted_children[child_1, child_2, child_3, moved_child]).to eq %w(child_1 child_2 moved_child child_3)
         moved_child.position.should eq 3
       end
 
       it "move_to_child_with_large_negative_index" do
-        ->{ moved_child.move_to_child_with_index root, -100 }.should raise_exception ActiveRecord::ActiveRecordError
+        expect{ moved_child.move_to_child_with_index root, -100 }.to raise_exception ActiveRecord::ActiveRecordError
       end
 
       it "move_to_child_with_nil_index" do
-        ->{ moved_child.move_to_child_with_index root, nil }.should raise_exception ActiveRecord::ActiveRecordError
+        expect{ moved_child.move_to_child_with_index root, nil }.to raise_exception ActiveRecord::ActiveRecordError
       end
 
       it "move_to_child_with_float_index" do
         moved_child.move_to_child_with_index root, 1.7
-        sorted_childs.(child_1, child_2, child_3, moved_child).should eq %w(child_1 moved_child child_2 child_3)
+        expect(sorted_children[child_1, child_2, child_3, moved_child]).to eq %w(child_1 moved_child child_2 child_3)
       end
 
       it "move_root_to_child_of_self" do
-        ->{ root.move_to_child_with_index child_1, 1 }.should raise_exception ActiveRecord::ActiveRecordError
+        expect{ root.move_to_child_with_index child_1, 1 }.to raise_exception ActiveRecord::ActiveRecordError
       end
 
     end
 
     describe "callbacks" do
-      before do
-        Default.any_instance.stub(:callback_test)
-        Default.before_move "callback_test(:before)"
-        Default.before_move "callback_test(:after)"
-      end
+      subject { child_3 }
 
-      specify "moving_node_to_another_level_should_fire_callbacks" do
-        child_3.should_receive(:callback_test).with(:before).once
-        child_3.should_receive(:callback_test).with(:after).once
-        child_3.move_to_root
-      end
+      it { should fire_callback(:before_move).when_calling(:move_to_root).once }
+      it { should fire_callback(:after_move).when_calling(:move_to_root).once }
+      it { should fire_callback(:around_move).when_calling(:move_to_root).once }
 
-      specify "moving_node_at_the_same_level_should_not_fire_callbacks" do
-        child_3.should_not_receive(:callback_test).any_number_of_times
-        child_3.move_left
-      end
+      it { should_not fire_callback(:before_move).when_calling(:move_left) }
+      it { should_not fire_callback(:after_move).when_calling(:move_left) }
+      it { should_not fire_callback(:around_move).when_calling(:move_left) }
 
+      it "should cache depth on save" do
+        record = build :default
+
+        record.depth.should be_nil
+        record.save
+
+        record.depth.should eq 0
+
+        record.move_to_left_of child_3
+        record.depth.should eq child_3.level
+      end
     end
 
   end

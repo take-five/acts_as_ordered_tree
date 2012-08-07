@@ -1,3 +1,4 @@
+# coding: utf-8
 module ActsAsOrderedTree
   module InstanceMethods
     extend ActiveSupport::Concern
@@ -41,7 +42,7 @@ module ActsAsOrderedTree
       nodes.reverse!
 
       # 3. create fake scope
-      fake_scope(self.class.where(:id => nodes.map(&:id)), nodes)
+      ActsAsOrderedTree::FakeScope.new(self.class, nodes, :where => {:id => nodes.map(&:id)})
     end
 
     # Returns the array of all parents starting from root
@@ -49,7 +50,7 @@ module ActsAsOrderedTree
       records = self_and_ancestors - [self]
 
       scope = self_and_ancestors.where(arel[:id].not_eq(id))
-      fake_scope scope, records
+      ActsAsOrderedTree::FakeScope.new(scope, records)
     end
 
     # Returns the array of all children of the parent, including self
@@ -76,32 +77,18 @@ module ActsAsOrderedTree
     # Returns a set of all of its children and nested children.
     # A little bit tricky. use RDBMS with recursive queries support (PostgreSQL)
     def descendants
-      @descendants_iterator ||= Iterator.new do |yielder|
-        children.each do |child|
-          yielder << child
+      records = self_and_descendants - [self]
+      scope = self_and_descendants.where(arel[:id].not_eq(id))
 
-          next if self.class.send(:children_counter_cache?) && child.leaf?
-
-          child.descendants.each do |grandchild|
-            yielder << grandchild
-          end
-        end
-      end.tap do |iter|
-        class << iter
-          attr_accessor :parent_ids
-        end
-
-        iter.parent_ids = iter.map { |record| record[parent_column] }.uniq
-      end
-
-      fake_scope self.class.where(parent_column => @descendants_iterator.parent_ids), @descendants_iterator
+      ActsAsOrderedTree::FakeScope.new scope, records
     end
 
     # Returns a set of itself and all of its nested children
     def self_and_descendants
-      records = descendants.to_a
+      records = fetch_self_and_descendants
+      parents = records.map { |record| record[parent_column] }.uniq
 
-      fake_scope self.class.where(arel[parent_column].in(records.parent_ids).or(arel[:id].eq(id))), [self] + records
+      ActsAsOrderedTree::FakeScope.new self.class, records, :where => {parent_column => parents}
     end
 
     def is_descendant_of?(other)
@@ -120,6 +107,7 @@ module ActsAsOrderedTree
       other.is_or_is_descendant_of? self
     end
 
+    # Returns a left (upper) sibling of the node
     def left_sibling
       siblings.
           where( arel[position_column].lt(self[position_column]) ).
@@ -128,6 +116,7 @@ module ActsAsOrderedTree
     end
     alias higher_item left_sibling
 
+    # Returns a right (lower) sibling of the node
     def right_sibling
       siblings.
           where( arel[position_column].gt(self[position_column]) ).
@@ -181,21 +170,28 @@ module ActsAsOrderedTree
       move_to nil, :root
     end
 
+    # Returns +true+ it is possible to move node to left/right/child of +target+
     def move_possible?(target)
       !is_or_is_ancestor_of?(target)
     end
 
     private
-
-    def reload_node
-      reload(:select => "#{parent_column}, #{position_column}", :lock => true)
+    # reloads relevant ordered_tree columns
+    def reload_node #:nodoc:
+      reload(
+        :select => [parent_column,
+                    position_column,
+                    depth_column,
+                    children_counter_cache_column].compact,
+        :lock => true
+      )
     end
 
-    def compute_level
+    def compute_level #:nodoc:
       ancestors.count
     end
 
-    def compute_new_parent_id_and_pos(target, pos)
+    def compute_ordered_tree_columns(target, pos) #:nodoc:
       case pos
         when :root  then
           parent_id = nil
@@ -204,23 +200,28 @@ module ActsAsOrderedTree
           else
             self.class.roots.maximum(position_column).try(:succ) || 1
           end
+          depth = 0
         when :left  then
           parent_id = target[parent_column]
           position = target[position_column]
           position -= 1 if target[parent_column] == self[parent_column] && target[position_column] > position_was # right
+          depth = target.level
         when :right then
           parent_id = target[parent_column]
           position = target[position_column]
           position += 1 if target[parent_column] != self[parent_column] || target[position_column] < position_was # left
+          depth = target.level
         when :child then
           parent_id = target.id
           position = target.children.maximum(position_column).try(:succ) || 1
+          depth = target.level + 1
         else raise ActiveRecord::ActiveRecordError, "Position should be :child, :left, :right or :root ('#{pos}' received)."
       end
-      return parent_id, position
+      return parent_id, position, depth
     end
 
-    def move_to(target, pos)
+    # This method do real node movements
+    def move_to(target, pos) #:nodoc:
       if target.is_a? self.class.base_class
         target.reload
       elsif pos != :root && target
@@ -234,7 +235,7 @@ module ActsAsOrderedTree
 
       position_was = send "#{position_column}_was".intern
       parent_id_was = send "#{parent_column}_was".intern
-      parent_id, position = compute_new_parent_id_and_pos(target, pos)
+      parent_id, position, depth = compute_ordered_tree_columns(target, pos)
 
       # nothing changed - quit
       return if parent_id == parent_id_was && position == position_was
@@ -243,44 +244,39 @@ module ActsAsOrderedTree
         decrement_lower_positions parent_id_was, position_was if position_was
         increment_lower_positions parent_id, position
 
-        self.class.update_all({parent_column => parent_id, position_column => position}, {:id => id})
+        columns = {parent_column => parent_id, position_column => position}
+        columns[depth_column] = depth if depth_column
+
+        self.class.update_all(columns, :id => id)
         reload_node
       end
 
       if id_was && parent_id != parent_id_was
         run_callbacks :move, &update
       else
-        update.()
+        update.call
       end
     end
 
-    def decrement_lower_positions(parent_id, position)
+    def decrement_lower_positions(parent_id, position) #:nodoc:
       conditions = arel[parent_column].eq(parent_id).and(arel[position_column].gt(position))
 
       self.class.update_all "#{position_column} = #{position_column} - 1", conditions
     end
 
-    def increment_lower_positions(parent_id, position)
+    def increment_lower_positions(parent_id, position) #:nodoc:
       conditions = arel[parent_column].eq(parent_id).and(arel[position_column].gteq(position))
 
       self.class.update_all "#{position_column} = #{position_column} + 1", conditions
     end
 
-    def fake_scope(scope, records) #:nodoc:
-      scope.instance_variable_set :@loaded, true
-      scope.instance_variable_set :@records, records
+    # recursively load descendants
+    def fetch_self_and_descendants #:nodoc:
+      @self_and_descendants ||= [self] + children.map { |child| [child, child.descendants] }.flatten
+    end
 
-      # do preload
-      preload = scope.preload_values
-      preload +=  scope.includes_values unless scope.eager_loading?
-      preload.each do |associations|
-        ActiveRecord::Associations::Preloader.new(records, associations).run
-      end
-
-      # mark records as readonly
-      records.each &:readonly! if scope.readonly_value
-
-      scope
+    def set_depth! #:nodoc:
+      self[depth_column] = compute_level
     end
 
     def arel #:nodoc:

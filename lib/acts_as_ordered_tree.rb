@@ -1,8 +1,8 @@
 require "active_record"
 require "acts_as_ordered_tree/version"
 require "acts_as_ordered_tree/class_methods"
+require "acts_as_ordered_tree/fake_scope"
 require "acts_as_ordered_tree/instance_methods"
-require "acts_as_ordered_tree/iterator"
 
 module ActsAsOrderedTree
   # == Usage
@@ -50,6 +50,11 @@ module ActsAsOrderedTree
     # protect position&depth from mass-assignment
     attr_protected depth_column, position_column
 
+    if depth_column
+      before_create :set_depth!
+      before_save :set_depth!, :if => "#{parent_column}_changed?"
+    end
+
     after_save "move_to_child_with_index(parent, #{position_column})", :if => position_column
     after_save :move_to_root, :unless => [position_column, parent_column]
     after_save 'move_to_child_of(parent)', :if => parent_column, :unless => position_column
@@ -71,7 +76,7 @@ module ActsAsOrderedTree
     end
 
     def children_counter_cache_column
-      reflections[:parent].counter_cache_column.try(:to_sym)
+      acts_as_ordered_tree_options[:counter_cache].try(:to_sym)
     end
   end
 end # module ActsAsOrderedTree
