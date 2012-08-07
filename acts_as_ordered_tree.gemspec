@@ -5,8 +5,8 @@ require "acts_as_ordered_tree/version"
 Gem::Specification.new do |s|
   s.name        = "acts_as_ordered_tree"
   s.version     = ActsAsOrderedTree::VERSION
-  s.authors     = ["Alexei Mikhailov"]
-  s.email       = %w(amikhailov83@gmail.com)
+  s.authors     = ["Alexei Mikhailov", "Vladimir Kuznetsov"]
+  s.email       = %w(amikhailov83@gmail.com kv86@mail.ru)
   s.homepage    = "https://github.com/take-five/acts_as_ordered_tree"
   s.summary     = %q{ActiveRecord extension for sorted adjacency lists support}
 

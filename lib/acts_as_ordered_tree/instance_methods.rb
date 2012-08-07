@@ -164,6 +164,7 @@ module ActsAsOrderedTree
 
     # Move the node to the child of another node with specify index
     def move_to_child_with_index(node, index)
+      raise ActiveRecord::ActiveRecordError, "index cant be nil" unless index
       new_siblings = node.try(:children) || self.class.roots
 
       if new_siblings.empty?
@@ -184,11 +185,12 @@ module ActsAsOrderedTree
       self != target && !is_or_is_ancestor_of?(target)
     end
 
+    private
+
     def reload_node
       reload(:select => "#{parent_column}, #{position_column}", :lock => true)
     end
 
-    private
     def compute_level
       ancestors.count
     end
@@ -197,15 +199,19 @@ module ActsAsOrderedTree
       case pos
         when :root  then
           parent_id = nil
-          position = self.class.roots.maximum(position_column).try(:succ) || 1
+          position = if self.root? && self[position_column]
+            self[position_column]
+          else
+            self.class.roots.maximum(position_column).try(:succ) || 1
+          end
         when :left  then
           parent_id = target[parent_column]
           position = target[position_column]
-          position -= 1 if target[parent_column] == self.parent_id && target[position_column] > position_was # right
+          position -= 1 if target[parent_column] == self[parent_column] && target[position_column] > position_was # right
         when :right then
           parent_id = target[parent_column]
           position = target[position_column]
-          position += 1 if target[parent_column] != self.parent_id || target[position_column] < position_was # left
+          position += 1 if target[parent_column] != self[parent_column] || target[position_column] < position_was # left
         when :child then
           parent_id = target.id
           position = target.children.maximum(position_column).try(:succ) || 1
@@ -217,13 +223,13 @@ module ActsAsOrderedTree
     def move_to(target, pos)
       if target.is_a? self.class.base_class
         target.reload
-        raise ActiveRecord::ActiveRecordError, "Impossible move" unless move_possible?(target)
-      elsif pos != :root
+      elsif pos != :root && target
         # load object if node is not an object
         target = self.class.find(target)
-        raise ActiveRecord::ActiveRecordError, "Impossible move" unless target && move_possible?(target)
-      elsif pos == :root
-        raise ActiveRecord::ActiveRecordError, "Impossible move" if self.root? && self[position_column]
+      end
+
+      unless pos == :root || target && move_possible?(target)
+        raise ActiveRecord::ActiveRecordError, "Impossible move"
       end
 
       position_was = send "#{position_column}_was".intern
@@ -238,7 +244,7 @@ module ActsAsOrderedTree
         increment_lower_positions parent_id, position
 
         self.class.update_all({parent_column => parent_id, position_column => position}, {:id => id})
-        self.reload_node
+        reload_node
       end
 
       if id_was && parent_id != parent_id_was

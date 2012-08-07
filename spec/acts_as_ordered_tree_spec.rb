@@ -68,13 +68,13 @@ describe ActsAsOrderedTree do
     # create fixture
     let!(:root) { FactoryGirl.create :default }
 
-    context "single" do
+    context "given a single root node" do
       subject { root }
 
       its(:position) { should eq 1 }
     end
 
-    context "list" do
+    context "given multiple root nodes" do
       before { FactoryGirl.create_list(:default, 3) }
 
       subject { Default }
@@ -310,7 +310,7 @@ describe ActsAsOrderedTree do
       node.position = 1000
     end
 
-    subject { node.reload_node }
+    subject { node.send :reload_node }
 
     its(:name) { should eq 'changed' }
     its(:parent_id) { should be_nil }
@@ -324,7 +324,7 @@ describe ActsAsOrderedTree do
     let!(:child_3) { FactoryGirl.create :default, :parent => root, :name => 'child_3' }
 
     sorted_childs = proc do |*childs|
-      childs.sort { |c1, c2| c1.reload_node.position <=> c2.reload_node.position }.map(&:name)
+      childs.sort { |c1, c2| c1.reload.position <=> c2.reload.position }.map(&:name)
     end
 
     context "initial" do
@@ -413,21 +413,33 @@ describe ActsAsOrderedTree do
     describe "#move_to_root" do
       before { child_2.move_to_root }
 
-      context "root" do
-        subject { child_2.reload_node }
+      context "child_2" do
+        subject { child_2 }
 
         its(:level) { should be_zero }
         its(:parent_id) { should be_nil }
         its(:position) { should eq 2 }
-        it { Default.root.should eq root }
+
+        it "should not become new root" do
+          Default.root.should eq root
+        end
       end
 
-      context "childs" do
-        specify { child_1.reload_node.position.should eq 1 }
-        specify { child_3.reload_node.position.should eq 2 }
+      context "other_childs" do
+        specify { child_1.reload.position.should eq 1 }
+        specify { child_3.reload.position.should eq 2 }
       end
 
-      specify { ->{ root.move_to_root }.should raise_exception ActiveRecord::ActiveRecordError }
+      context "given a root node" do
+        before { root.move_to_root }
+        subject { root }
+
+        its(:position) { should eq 1 }
+
+        it "positions should not change" do
+          sorted_childs.(root, child_3).should eq %w(root child_3)
+        end
+      end
     end
 
     describe "#move_to_child_of" do
@@ -497,6 +509,19 @@ describe ActsAsOrderedTree do
         moved_child.position.should eq 3
       end
 
+      it "move_to_child_with_large_negative_index" do
+        ->{ moved_child.move_to_child_with_index root, -100 }.should raise_exception ActiveRecord::ActiveRecordError
+      end
+
+      it "move_to_child_with_nil_index" do
+        ->{ moved_child.move_to_child_with_index root, nil }.should raise_exception ActiveRecord::ActiveRecordError
+      end
+
+      it "move_to_child_with_float_index" do
+        moved_child.move_to_child_with_index root, 1.7
+        sorted_childs.(child_1, child_2, child_3, moved_child).should eq %w(child_1 moved_child child_2 child_3)
+      end
+
       it "move_root_to_child_of_self" do
         ->{ root.move_to_child_with_index child_1, 1 }.should raise_exception ActiveRecord::ActiveRecordError
       end
@@ -510,10 +535,15 @@ describe ActsAsOrderedTree do
         Default.before_move "callback_test(:after)"
       end
 
-      specify "move_node_to_another_level_should_raise_callbacks" do
+      specify "moving_node_to_another_level_should_fire_callbacks" do
         child_3.should_receive(:callback_test).with(:before).once
         child_3.should_receive(:callback_test).with(:after).once
         child_3.move_to_root
+      end
+
+      specify "moving_node_at_the_same_level_should_not_fire_callbacks" do
+        child_3.should_not_receive(:callback_test).any_number_of_times
+        child_3.move_left
       end
 
     end
