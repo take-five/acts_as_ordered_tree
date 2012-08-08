@@ -698,5 +698,11 @@ describe ActsAsOrderedTree do
         it { should have_at_least(1).error_on(:parent) }
       end
     end
+
+    describe "attempt to create node with wrong position" do
+      it "should not throw error" do
+        expect{ create :default, :position => 22 }.not_to raise_error
+      end
+    end
   end
 end
