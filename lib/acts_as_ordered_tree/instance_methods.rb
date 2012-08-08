@@ -142,11 +142,13 @@ module ActsAsOrderedTree
     def move_to_left_of(node)
       move_to node, :left
     end
+    alias move_to_above_of move_to_left_of
 
     # Move the node to the left of another node
     def move_to_right_of(node)
       move_to node, :right
     end
+    alias move_to_bottom_of move_to_right_of
 
     # Move the node to the child of another node
     def move_to_child_of(node)
