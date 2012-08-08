@@ -135,6 +135,41 @@ describe ActsAsOrderedTree do
     it_behaves_like "tree with predicates", :default_with_counter_cache
   end
 
+  describe "#first?, #last?" do
+    let!(:root)    { create :default }
+    let!(:child_1) { create :default, :parent => root }
+    let!(:child_2) { create :default, :parent => root }
+    let!(:child_3) { create :default, :parent => root }
+
+    context "given a node without siblings" do
+      subject { root }
+
+      it { should be_first }
+      it { should be_last }
+    end
+
+    context "given a node, first in the list" do
+      subject { child_1 }
+
+      it { should be_first }
+      it { should_not be_last }
+    end
+
+    context "given a node, nor first neither last" do
+      subject { child_2 }
+
+      it { should_not be_first }
+      it { should_not be_last }
+    end
+
+    context "given a node, last in the list" do
+      subject { child_3 }
+
+      it { should_not be_first }
+      it { should be_last }
+    end
+  end
+
   describe "#level" do
     context "given a persistent root node" do
       subject { create :default }
@@ -329,21 +364,36 @@ describe ActsAsOrderedTree do
   end
 
   describe "#left_sibling" do
-    let(:items) { create_list :default, 3 }
-    subject { items }
+    shared_examples "tree with siblings" do
+      subject { items }
 
-    its('first.left_sibling') { should be_nil }
-    its('second.left_sibling') { should eq items.first }
-    its('third.left_sibling') { should eq items.second }
-  end
+      its('first.left_sibling') { should be_nil }
+      its('first.right_sibling') { should eq items.second }
 
-  describe "#right_sibling" do
-    let(:items) { create_list :default, 3 }
-    subject { items }
+      its('second.left_sibling') { should eq items.first }
+      its('second.right_sibling') { should eq items.last }
 
-    its('first.right_sibling') { should eq items.second }
-    its('second.right_sibling') { should eq items.third }
-    its('last.right_sibling') { should be_nil }
+      its('third.left_sibling') { should eq items.second }
+      its('third.right_sibling') { should be_nil }
+    end
+
+    context "given unscoped tree" do
+      it_should_behave_like "tree with siblings" do
+        let(:items) { create_list :default, 3 }
+      end
+    end
+
+    context "given scoped tree" do
+      let!(:items_1) { create_list :scoped, 3, :scope_type => "s1" }
+      let!(:items_2) { create_list :scoped, 3, :scope_type => "s2" }
+
+      it_should_behave_like "tree with siblings" do
+        let(:items) { items_1 }
+      end
+      it_should_behave_like "tree with siblings" do
+        let(:items) { items_2 }
+      end
+    end
   end
 
   describe "#reload_node" do
@@ -591,6 +641,13 @@ describe ActsAsOrderedTree do
         expect{ root.move_to_child_with_index child_1, 1 }.to raise_exception ActiveRecord::ActiveRecordError
       end
 
+    end
+
+    describe "#insert_at" do
+      before { child_3.insert_at(1) }
+      before { child_3.reload }
+
+      specify { expect([child_3, child_1, child_2]).to be_sorted }
     end
 
     describe "callbacks" do

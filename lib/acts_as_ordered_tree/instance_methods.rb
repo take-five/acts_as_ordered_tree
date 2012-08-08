@@ -55,7 +55,7 @@ module ActsAsOrderedTree
 
     # Returns the array of all children of the parent, including self
     def self_and_siblings
-      self.class.preorder.where(parent_column => self[parent_column])
+      ordered_tree_scope.where(parent_column => self[parent_column])
     end
 
     # Returns the array of all children of the parent, except self
@@ -109,6 +109,16 @@ module ActsAsOrderedTree
       other.is_or_is_descendant_of? self
     end
 
+    # Return +true+ if this object is the first in the list.
+    def first?
+      self[position_column] <= 1
+    end
+
+    # Return +true+ if this object is the last in the list.
+    def last?
+      !right_sibling
+    end
+
     # Returns a left (upper) sibling of the node
     def left_sibling
       siblings.
@@ -125,6 +135,12 @@ module ActsAsOrderedTree
           first
     end
     alias lower_item right_sibling
+
+    # Insert the item at the given position (defaults to the top position of 1).
+    # +acts_as_list+ compatability
+    def insert_at(position = 1)
+      move_to_child_with_index(parent, position - 1)
+    end
 
     # Shorthand method for finding the left sibling and moving to the left of it.
     def move_left
