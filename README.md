@@ -6,7 +6,7 @@ Specify this `acts_as` extension if you want to model an ordered tree structure 
 This extension is mostly compatible with [`awesome_nested_set`](https://github.com/collectiveidea/awesome_nested_set/) gem
 
 ## Requirements
-Gem depends on `active_record >= 3`.
+Gem depends on `active_record >= 3`. We test it with `rails-3.0`, `rails-3.1`, `rails-3.2` and with `ruby-1.9.3`, `ruby-1.9.2`, `ruby-1.8.7`, `jruby-1.6.7` and `rubinius-2.0`.
 
 ## Installation
 Install it via rubygems:
