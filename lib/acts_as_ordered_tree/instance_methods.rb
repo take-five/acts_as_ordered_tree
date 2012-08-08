@@ -158,7 +158,7 @@ module ActsAsOrderedTree
     # Move the node to the child of another node with specify index
     def move_to_child_with_index(node, index)
       raise ActiveRecord::ActiveRecordError, "index cant be nil" unless index
-      new_siblings = node.try(:children) || self.class.roots
+      new_siblings = node.try(:children) || self.class.roots.delete_if { |root_node| root_node == self }
 
       if new_siblings.empty?
         node ? move_to_child_of(node) : move_to_root
@@ -207,6 +207,7 @@ module ActsAsOrderedTree
         when :root  then
           parent_id = nil
           position = if root? && self[position_column]
+            # already root node
             self[position_column]
           else
             ordered_tree_scope.roots.maximum(position_column).try(:succ) || 1
@@ -224,7 +225,12 @@ module ActsAsOrderedTree
           depth = target.level
         when :child then
           parent_id = target.id
-          position = target.children.maximum(position_column).try(:succ) || 1
+          position = if self[parent_column] == parent_id && self[position_column]
+            # already children of target node
+            self[position_column]
+          else
+            target.children.maximum(position_column).try(:succ) || 1
+          end
           depth = target.level + 1
         else raise ActiveRecord::ActiveRecordError, "Position should be :child, :left, :right or :root ('#{pos}' received)."
       end
