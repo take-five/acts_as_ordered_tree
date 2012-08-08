@@ -511,6 +511,17 @@ describe ActsAsOrderedTree do
         its(:right_sibling) { should be_nil }
       end
 
+      context "given a node which already is children of target" do
+        subject { child_2 }
+        before { child_2.move_to_child_of root }
+
+        its(:position) { should eq 2 }
+
+        it "positions_should_not_change" do
+          expect([child_1, child_2, child_3, moved_child]).to be_sorted
+        end
+      end
+
       it { expect([child_1, child_2, child_3, moved_child]).to be_sorted }
       it { expect{ root.move_to_child_of root }.to raise_exception ActiveRecord::ActiveRecordError }
       it { expect{ root.move_to_child_of child_1 }.to raise_exception ActiveRecord::ActiveRecordError }
