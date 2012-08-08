@@ -1,9 +1,9 @@
 # Acts As Ordered Tree
 WARNING! THIS GEM IS NOT COMPATIBLE WITH <a href="http://ordered-tree.rubyforge.org">ordered_tree gem</a>.
 
-Specify this `acts_as` extension if you want to model an ordered tree structure by providing a parent association, a children
-association and a sort column. For proper use you should have a foreign key column, which by default is called `parent_id`, and
-a sort column, which by default is called `position`.
+Specify this `acts_as` extension if you want to model an ordered tree structure ([adjacency list hierarchical structure](http://www.sqlsummit.com/AdjacencyList.htm)) by providing a parent association, a children association and a sort column. For proper use you should have a foreign key column, which by default is called `parent_id`, and a sort column, which is by default called `position`.
+
+This extension is mostly compatible with [`awesome_nested_set`](https://github.com/collectiveidea/awesome_nested_set/) gem
 
 ## Requirements
 Gem depends on `active_record >= 3`.
@@ -15,12 +15,32 @@ Install it via rubygems:
 gem install acts_as_ordered_tree
 ```
 
-Gem depends on `acts_as_tree` and `acts_as_list` gems.
+## Usage
+
+To make use of `acts_as_ordered_tree`, your model needs to have 2 fields: parent_id and position. You can also have an optional fields: depth and children_count:
+```ruby
+class CreateCategories < ActiveRecord::Migration
+  def self.up
+    create_table :categories do |t|
+      t.integer :company_id
+      t.string  :name
+      t.integer :parent_id # this is mandatory
+      t.integer :position # this is mandatory
+      t.integer :depth # this is optional
+      t.integer :children_count # this is optional
+    end
+  end
+
+  def self.down
+    drop_table :categories
+  end
+end
+```
 
 Setup your model:
 
 ```ruby
-class Node < ActiveRecord::Base
+class Category < ActiveRecord::Base
   acts_as_ordered_tree
 
   # gem introduces new ActiveRecord callbacks:
@@ -31,7 +51,8 @@ class Node < ActiveRecord::Base
 end
 ```
 
-## Example
+Now you can use `acts_as_ordered_tree` features:
+
 ```ruby
 # root
 #  \_ child1
@@ -39,12 +60,12 @@ end
 #       \_ subchild2
 
 
-root = Node.create(:name => "root")
+root = Category.create(:name => "root")
 child1 = root.children.create(:name => "child1")
 subchild1 = child1.children.create("name" => "subchild1")
 subchild2 = child1.children.create("name" => "subchild2")
 
-Node.roots # => [root]
+Category.roots # => [root]
 
 root.root? # => true
 root.parent # => nil
@@ -71,3 +92,16 @@ subchild1.move_to_child_of(root)
 subchild1.move_lower
 subchild1.move_higher
 ```
+
+## Contributing
+
+1. Fork it
+2. Create your feature branch (`git checkout -b my-new-feature`)
+3. Commit your changes (`git commit -am 'Added some feature'`)
+4. Push to the branch (`git push origin my-new-feature`)
+5. Create new Pull Request
+
+## TODO
+1. Fix README typos and grammatical errors (english speaking contributors are welcomed)
+2. Add moar examples and docs.
+3. Implement converter from other structures (nested_set, closure_tree)
