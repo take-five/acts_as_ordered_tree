@@ -11,6 +11,11 @@ module RSpec::Matchers
     FireCallbackMatcher.new(name)
   end
 
+  # example { expect(record1, record2, record3).to be_sorted }
+  def be_sorted
+    OrderMatcher.new
+  end
+
   class FireCallbackMatcher
     attr_reader :failure_message, :negative_failure_message
 
@@ -106,6 +111,22 @@ module RSpec::Matchers
       CODE
 
       result
+    end
+  end
+
+  class OrderMatcher
+    def matches?(*records)
+      @records = Array.wrap(records).flatten
+
+      @records.sort_by { |record| record[record.position_column] } == @records
+    end
+
+    def failure_message_for_should
+      "expected #{@records.inspect} to be ordered by position, but they are not"
+    end
+
+    def failure_message_for_should_not
+      "expected #{@records.inspect} not to be ordered by position, but they are"
     end
   end
 end

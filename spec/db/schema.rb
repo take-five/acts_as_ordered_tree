@@ -13,4 +13,11 @@ ActiveRecord::Schema.define(:version => 0) do
     t.column :red, :integer
     t.column :pitch, :integer
   end
+
+  create_table :scoped, :force => true do |t|
+    t.column :scope_type, :string
+    t.column :name, :string
+    t.column :parent_id, :integer
+    t.column :position, :integer
+  end
 end

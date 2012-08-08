@@ -90,27 +90,44 @@ describe ActsAsOrderedTree do
       let!(:child) { create factory_name, :parent => root }
       let!(:grandchild) { create factory_name, :parent => child }
 
-      specify { root.should be_root }
-      specify { root.should_not be_child }
-      specify { root.should_not be_leaf }
-      specify { root.root.should eq root }
-      specify { root.level.should eq 0 }
+      before { root.reload }
+      before { child.reload }
+      before { grandchild.reload }
 
-      specify { child.should_not be_root }
-      specify { child.should be_child }
-      specify { child.should_not be_leaf }
-      specify { child.root.should eq root }
-      specify { child.level.should eq 1 }
+      context "given root node" do
+        subject { root }
 
-      specify { grandchild.should_not be_root }
-      specify { grandchild.should be_child }
-      specify { grandchild.should be_leaf }
-      specify { grandchild.root.should eq root }
-      specify { grandchild.level.should eq 2 }
+        it { should be_root }
+        it { should_not be_child }
+        it { should_not be_leaf }
+        its(:root) { should eq root }
+        its(:level) { should eq 0 }
+      end
 
-      it "new record cannot be leaf" do
-        record = build factory_name
-        record.should_not be_leaf
+      context "given a branch node with children" do
+        subject { child }
+
+        it { should_not be_root }
+        it { should be_child }
+        it { should_not be_leaf }
+        its(:root) { should eq root }
+        its(:level) { should eq 1 }
+      end
+
+      context "given a leaf node" do
+        subject { grandchild }
+
+        it { should_not be_root }
+        it { should be_child }
+        it { should be_leaf }
+        its(:root) { should eq root }
+        its(:level) { should eq 2 }
+      end
+
+      context "given a new record" do
+        subject { build factory_name }
+
+        it { should_not be_leaf }
       end
     end
 
@@ -316,17 +333,17 @@ describe ActsAsOrderedTree do
     subject { items }
 
     its('first.left_sibling') { should be_nil }
-    specify { items[1].left_sibling.should eq items[0] }
-    specify { items[2].left_sibling.should eq items[1] }
+    its('second.left_sibling') { should eq items.first }
+    its('third.left_sibling') { should eq items.second }
   end
 
   describe "#right_sibling" do
     let(:items) { create_list :default, 3 }
     subject { items }
 
+    its('first.right_sibling') { should eq items.second }
+    its('second.right_sibling') { should eq items.third }
     its('last.right_sibling') { should be_nil }
-    specify { items[0].right_sibling.should eq items[1] }
-    specify { items[1].right_sibling.should eq items[2] }
   end
 
   describe "#reload_node" do
@@ -345,105 +362,104 @@ describe ActsAsOrderedTree do
     its(:position) { should eq 1 }
   end
 
-  context "move actions" do
+  describe "move actions" do
     let!(:root) { create :default, :name => 'root' }
     let!(:child_1) { create :default, :parent => root, :name => 'child_1' }
     let!(:child_2) { create :default, :parent => root, :name => 'child_2' }
     let!(:child_3) { create :default, :parent => root, :name => 'child_3' }
 
-    sorted_children = proc do |*childs|
-      childs.sort { |c1, c2| c1.reload.position <=> c2.reload.position }.map(&:name)
-    end
-
     context "initial" do
-      specify { expect(sorted_children[child_1, child_2, child_3]).to eq %w(child_1 child_2 child_3) }
-      specify { root.parent_id.should be_nil }
-      specify { root.level.should be_zero }
-      specify { root.position.should eq 1 }
+      subject { root }
+
+      specify { expect([child_1, child_2, child_3]).to be_sorted }
+
+      its(:parent_id) { should be_nil }
+      its(:level) { should be_zero }
+      its(:position) { should eq 1 }
     end
 
     describe "#move_left" do
-      it "move_1_left" do
+      example "move_1_left" do
         expect{ child_1.move_left }.to raise_exception ActiveRecord::ActiveRecordError
-        expect(sorted_children[child_1, child_2, child_3]).to eq %w(child_1 child_2 child_3)
+        expect([child_1, child_2, child_3]).to be_sorted
       end
 
-      it "move_2_left" do
+      example "move_2_left" do
         child_2.move_left
-        expect(sorted_children[child_1, child_2, child_3]).to eq %w(child_2 child_1 child_3)
+        expect([child_2, child_1, child_3]).to be_sorted
       end
 
-      it "move_3_left" do
+      example "move_3_left" do
         child_3.move_left
-        expect(sorted_children[child_1, child_2, child_3]).to eq %w(child_1 child_3 child_2)
+        expect([child_1, child_3, child_2]).to be_sorted
       end
     end
 
     describe "#move_right" do
-      it "move_3_right" do
+      example "move_3_right" do
         expect{ child_3.move_right }.to raise_exception ActiveRecord::ActiveRecordError
-        expect(sorted_children[child_1, child_2, child_3]).to eq %w(child_1 child_2 child_3)
+        expect([child_1, child_2, child_3]).to be_sorted
       end
 
-      it "move_2_right" do
+      example "move_2_right" do
         child_2.move_right
-        expect(sorted_children[child_1, child_2, child_3]).to eq %w(child_1 child_3 child_2)
+        expect([child_1, child_3, child_2]).to be_sorted
       end
 
-      it "move_1_right" do
+      example "move_1_right" do
         child_1.move_right
-        expect(sorted_children[child_1, child_2, child_3]).to eq %w(child_2 child_1 child_3)
+        expect([child_2, child_1, child_3]).to be_sorted
       end
     end
 
     describe "#move_to_left_of" do
-      it "move_3_to_left_of_1" do
+      example "move_3_to_left_of_1" do
         child_3.move_to_left_of child_1
-        expect(sorted_children[child_1, child_2, child_3]).to eq %w(child_3 child_1 child_2)
+        expect([child_3, child_1, child_2]).to be_sorted
       end
 
-      it "move_3_to_left_of_2" do
+      example "move_3_to_left_of_2" do
         child_3.move_to_left_of child_2
-        expect(sorted_children[child_1, child_2, child_3]).to eq %w(child_1 child_3 child_2)
+        expect([child_1, child_3, child_2]).to be_sorted
       end
 
-      it "move_1_to_left_of_3" do
+      example "move_1_to_left_of_3" do
         child_1.move_to_left_of child_3
-        expect(sorted_children[child_1, child_2, child_3]).to eq %w(child_2 child_1 child_3)
+        expect([child_2, child_1, child_3]).to be_sorted
       end
 
-      it "move_1_to_left_of_3_id" do
+      example "move_1_to_left_of_3_id" do
         child_1.move_to_left_of child_3.id
-        expect(sorted_children[child_1, child_2, child_3]).to eq %w(child_2 child_1 child_3)
+        expect([child_2, child_1, child_3]).to be_sorted
       end
 
-      it "move_root_to_left_of_child_2" do
+      example "move_root_to_left_of_child_2" do
         expect{ root.move_to_left_of child_2 }.to raise_exception ActiveRecord::ActiveRecordError
       end
     end
 
     describe "#move_to_right_of" do
-      it "move_1_to_right_of_2" do
+      example "move_1_to_right_of_2" do
         child_1.move_to_right_of child_2
-        expect(sorted_children[child_1, child_2, child_3]).to eq %w(child_2 child_1 child_3)
+        expect([child_2, child_1, child_3]).to be_sorted
       end
 
-      it "move_1_to_right_of_3" do
+      example "move_1_to_right_of_3" do
         child_1.move_to_right_of child_3
-        expect(sorted_children[child_1, child_2, child_3]).to eq %w(child_2 child_3 child_1)
+        expect([child_2, child_3, child_1]).to be_sorted
       end
 
-      it "move_1_to_right_of_3_id" do
+      example "move_1_to_right_of_3_id" do
         child_1.move_to_right_of child_3.id
-        expect(sorted_children[child_1, child_2, child_3]).to eq %w(child_2 child_3 child_1)
+        expect([child_2, child_3, child_1]).to be_sorted
       end
 
-      it "move_3_to_right_of_1" do
+      example "move_3_to_right_of_1" do
         child_3.move_to_right_of child_1
-        expect(sorted_children[child_1, child_2, child_3]).to eq %w(child_1 child_3 child_2)
+        expect([child_1, child_3, child_2]).to be_sorted
       end
 
-      it "move_root_to_right_of_child_2" do
+      example "move_root_to_right_of_child_2" do
         expect{ root.move_to_right_of child_2 }.to raise_exception ActiveRecord::ActiveRecordError
       end
     end
@@ -475,7 +491,7 @@ describe ActsAsOrderedTree do
         its(:position) { should eq 1 }
 
         it "positions should not change" do
-          expect(sorted_children[root, child_3]).to eq %w(root child_3)
+          expect([root, child_3]).to be_sorted
         end
       end
     end
@@ -495,7 +511,7 @@ describe ActsAsOrderedTree do
         its(:right_sibling) { should be_nil }
       end
 
-      it { expect(sorted_children[child_1, child_2, child_3, moved_child]).to eq %w(child_1 child_2 child_3 moved_child) }
+      it { expect([child_1, child_2, child_3, moved_child]).to be_sorted }
       it { expect{ root.move_to_child_of root }.to raise_exception ActiveRecord::ActiveRecordError }
       it { expect{ root.move_to_child_of child_1 }.to raise_exception ActiveRecord::ActiveRecordError }
     end
@@ -503,64 +519,64 @@ describe ActsAsOrderedTree do
     describe "#move_to_child_with_index" do
       let(:moved_child) { create :default, :name => 'moved_child' }
 
-      it "move_to_child_as_first" do
+      example "move_to_child_as_first" do
         moved_child.move_to_child_with_index root, 0
-        expect(sorted_children[child_1, child_2, child_3, moved_child]).to eq %w(moved_child child_1 child_2 child_3)
+        expect([moved_child, child_1, child_2, child_3]).to be_sorted
         moved_child.position.should eq 1
       end
 
-      it "move_to_child_as_second" do
+      example "move_to_child_as_second" do
         moved_child.move_to_child_with_index root, 1
-        expect(sorted_children[child_1, child_2, child_3, moved_child]).to eq %w(child_1 moved_child child_2 child_3)
+        expect([child_1, moved_child, child_2, child_3]).to be_sorted
         moved_child.position.should eq 2
       end
 
-      it "move_to_child_as_third" do
+      example "move_to_child_as_third" do
         moved_child.move_to_child_with_index root, 2
-        expect(sorted_children[child_1, child_2, child_3, moved_child]).to eq %w(child_1 child_2 moved_child child_3)
+        expect([child_1, child_2, moved_child, child_3]).to be_sorted
         moved_child.position.should eq 3
       end
 
-      it "move_to_child_as_last" do
+      example "move_to_child_as_last" do
         moved_child.move_to_child_with_index root, 3
-        expect(sorted_children[child_1, child_2, child_3, moved_child]).to eq %w(child_1 child_2 child_3 moved_child)
+        expect([child_1, child_2, child_3, moved_child]).to be_sorted
         moved_child.position.should eq 4
       end
 
-      it "move_child_to_root_as_first" do
+      example "move_child_to_root_as_first" do
         child_3.move_to_child_with_index nil, 0
         child_3.level.should be_zero
-        expect(sorted_children[root, moved_child, child_3]).to eq %w(child_3 root moved_child)
-        expect(sorted_children[child_1, child_2]).to eq %w(child_1 child_2)
+        expect([child_3, root, moved_child]).to be_sorted
+        expect([child_1, child_2]).to be_sorted
         child_2.right_sibling.should be_nil
       end
 
-      it "move_to_child_with_large_index" do
+      example "move_to_child_with_large_index" do
         moved_child.move_to_child_with_index root, 100
-        expect(sorted_children[child_1, child_2, child_3, moved_child]).to eq %w(child_1 child_2 child_3 moved_child)
+        expect([child_1, child_2, child_3, moved_child]).to be_sorted
         moved_child.position.should eq 4
       end
 
-      it "move_to_child_with_negative_index" do
+      example "move_to_child_with_negative_index" do
         moved_child.move_to_child_with_index root, -2
-        expect(sorted_children[child_1, child_2, child_3, moved_child]).to eq %w(child_1 child_2 moved_child child_3)
+        expect([child_1, child_2, moved_child, child_3]).to be_sorted
         moved_child.position.should eq 3
       end
 
-      it "move_to_child_with_large_negative_index" do
+      example "move_to_child_with_large_negative_index" do
         expect{ moved_child.move_to_child_with_index root, -100 }.to raise_exception ActiveRecord::ActiveRecordError
       end
 
-      it "move_to_child_with_nil_index" do
+      example "move_to_child_with_nil_index" do
         expect{ moved_child.move_to_child_with_index root, nil }.to raise_exception ActiveRecord::ActiveRecordError
       end
 
-      it "move_to_child_with_float_index" do
+      example "move_to_child_with_float_index" do
         moved_child.move_to_child_with_index root, 1.7
-        expect(sorted_children[child_1, child_2, child_3, moved_child]).to eq %w(child_1 moved_child child_2 child_3)
+        expect([child_1, moved_child, child_2, child_3]).to be_sorted
       end
 
-      it "move_root_to_child_of_self" do
+      example "move_root_to_child_of_self" do
         expect{ root.move_to_child_with_index child_1, 1 }.to raise_exception ActiveRecord::ActiveRecordError
       end
 
@@ -592,4 +608,95 @@ describe ActsAsOrderedTree do
 
   end
 
+  describe "scoped trees" do
+    let!(:root1) { create :scoped, :scope_type => "t1" }
+    let!(:child1) { create :scoped, :parent => root1 }
+    let!(:orphan) do
+      record = create :scoped, :parent => root1
+      record.class.update_all({:scope_type => "t0", :position => 1}, {:id => record.id})
+      record
+    end
+
+    let!(:root2) { create :scoped, :scope_type => "t2" }
+    let!(:child2) { create :scoped, :scope_type => "t2", :parent => root2 }
+
+    it "should not stick positions together for different scopes" do
+      root1.position.should eq root2.position
+    end
+    it "should automatically set scope for new records with parent" do
+      child1.should be_same_scope(root1)
+    end
+    it "should not include orphans" do
+      root1.children.reload.should_not include orphan
+      root1.descendants.reload.should_not include orphan
+    end
+    it "should not allow to move records between scopes" do
+      expect { child2.move_to_child_of root1 }.to raise_error(ActiveRecord::ActiveRecordError)
+    end
+    it "should not allow to change scope" do
+      child2.parent = root1
+      child2.should have_at_least(1).error_on(:parent)
+    end
+    it "should not allow to add scoped record to children collection" do
+      root1.children << child2
+      root1.children.reload.should_not include child2
+    end
+  end
+
+  describe "#destroy behavior" do
+    let!(:root) { create :default, :name => 'root' }
+    let!(:child_1) { create :default, :parent => root, :name => 'child_1' }
+    let!(:child_2) { create :default, :parent => root, :name => 'child_2' }
+    let!(:child_3) { create :default, :parent => root, :name => 'child_3' }
+
+    describe "it should destroy descendants" do
+      subject { root }
+      before { subject.destroy }
+
+      it { should be_destroyed }
+      its('descendants.reload') { should be_empty }
+
+      specify "ensure the loneliness" do
+        root.class.all.should be_empty
+      end
+    end
+
+    describe "it should stick positions together" do
+      before { child_2.destroy }
+      before { child_3.reload }
+
+      subject { child_3 }
+
+      its(:left_sibling) { should eq child_1 }
+      its(:position) { should eq 2 }
+    end
+  end
+
+  describe "vulnerabilities" do
+    describe "attempt to link parent to one of descendants" do
+      let(:root) { create :default }
+      let(:child) { create :default, :parent => root }
+      let(:grandchild) { create :default, :parent => child }
+
+      subject { root }
+
+      context "given self as parent" do
+        before { root.parent = root }
+
+        it { should have_at_least(1).error_on(:parent) }
+      end
+
+      context "given child as parent" do
+        before { root.parent = child }
+
+        it { should have_at_least(1).error_on(:parent) }
+      end
+
+      context "given grandchild as parent" do
+        before { root.parent = grandchild }
+
+        it { should have_at_least(1).error_on(:parent) }
+      end
+    end
+  end
 end

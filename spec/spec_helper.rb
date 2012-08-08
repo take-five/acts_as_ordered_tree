@@ -6,8 +6,12 @@ require "bundler/setup"
 require "rspec"
 require "rspec-expectations"
 
-require "simplecov"
-SimpleCov.start
+begin
+  require "simplecov"
+  SimpleCov.start
+rescue LoadError
+  #ignore
+end
 
 require "active_model"
 require "active_record"

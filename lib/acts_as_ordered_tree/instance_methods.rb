@@ -64,31 +64,33 @@ module ActsAsOrderedTree
     end
 
     def level
-      # cached result becomes invalid when parent is changed
-      if new_record? ||
-          changed_attributes.include?(parent_column.to_s) ||
-          self[depth_column].blank?
-        self[depth_column] = compute_level
+      if depth_column
+        # cached result becomes invalid when parent is changed
+        if new_record? ||
+            changed_attributes.include?(parent_column.to_s) ||
+            self[depth_column].blank?
+          self[depth_column] = compute_level
+        else
+          self[depth_column]
+        end
       else
-        self[depth_column]
+        compute_level
       end
     end
 
     # Returns a set of all of its children and nested children.
     # A little bit tricky. use RDBMS with recursive queries support (PostgreSQL)
     def descendants
-      records = self_and_descendants - [self]
-      scope = self_and_descendants.where(arel[:id].not_eq(id))
+      records = fetch_self_and_descendants - [self]
 
-      ActsAsOrderedTree::FakeScope.new scope, records
+      ActsAsOrderedTree::FakeScope.new self.class, records, :where => {:id => records.map(&:id)}
     end
 
     # Returns a set of itself and all of its nested children
     def self_and_descendants
       records = fetch_self_and_descendants
-      parents = records.map { |record| record[parent_column] }.uniq
 
-      ActsAsOrderedTree::FakeScope.new self.class, records, :where => {parent_column => parents}
+      ActsAsOrderedTree::FakeScope.new self.class, records, :where => {:id => records.map(&:id)}
     end
 
     def is_descendant_of?(other)
@@ -172,7 +174,14 @@ module ActsAsOrderedTree
 
     # Returns +true+ it is possible to move node to left/right/child of +target+
     def move_possible?(target)
-      !is_or_is_ancestor_of?(target)
+      same_scope?(target) && !is_or_is_ancestor_of?(target)
+    end
+
+    # Check if other model is in the same scope
+    def same_scope?(other)
+      scope_column_names.empty? || scope_column_names.all? do |attr|
+        self[attr] == other[attr]
+      end
     end
 
     private
@@ -195,10 +204,10 @@ module ActsAsOrderedTree
       case pos
         when :root  then
           parent_id = nil
-          position = if self.root? && self[position_column]
+          position = if root? && self[position_column]
             self[position_column]
           else
-            self.class.roots.maximum(position_column).try(:succ) || 1
+            ordered_tree_scope.roots.maximum(position_column).try(:succ) || 1
           end
           depth = 0
         when :left  then
@@ -247,7 +256,7 @@ module ActsAsOrderedTree
         columns = {parent_column => parent_id, position_column => position}
         columns[depth_column] = depth if depth_column
 
-        self.class.update_all(columns, :id => id)
+        ordered_tree_scope.update_all(columns, :id => id)
         reload_node
       end
 
@@ -261,13 +270,13 @@ module ActsAsOrderedTree
     def decrement_lower_positions(parent_id, position) #:nodoc:
       conditions = arel[parent_column].eq(parent_id).and(arel[position_column].gt(position))
 
-      self.class.update_all "#{position_column} = #{position_column} - 1", conditions
+      ordered_tree_scope.update_all "#{position_column} = #{position_column} - 1", conditions
     end
 
     def increment_lower_positions(parent_id, position) #:nodoc:
       conditions = arel[parent_column].eq(parent_id).and(arel[position_column].gteq(position))
 
-      self.class.update_all "#{position_column} = #{position_column} + 1", conditions
+      ordered_tree_scope.update_all "#{position_column} = #{position_column} + 1", conditions
     end
 
     # recursively load descendants
@@ -279,8 +288,28 @@ module ActsAsOrderedTree
       self[depth_column] = compute_level
     end
 
+    def set_scope! #:nodoc:
+      scope_column_names.each do |column|
+        self[column] = parent[column]
+      end
+    end
+
+    def destroy_descendants
+      descendants.delete_all
+      # flush memoization
+      @self_and_descendants = nil
+    end
+
     def arel #:nodoc:
       self.class.arel_table
+    end
+
+    def ordered_tree_scope
+      if scope_column_names.empty?
+        self.class.scoped
+      else
+        self.class.where Hash[scope_column_names.map { |column| [column, self[column]] }]
+      end
     end
   end # module InstanceMethods
 end # module ActsAsOrderedTree
