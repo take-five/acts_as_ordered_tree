@@ -284,8 +284,14 @@ module ActsAsOrderedTree
         reload_node
       end
 
-      if id_was && parent_id != parent_id_was
-        run_callbacks :move, &update
+      move_kind = case
+        when id_was && parent_id != parent_id_was then :move
+        when id_was && position  != position_was  then :reorder
+        else nil
+      end
+
+      if move_kind
+        run_callbacks move_kind, &update
       else
         update.call
       end

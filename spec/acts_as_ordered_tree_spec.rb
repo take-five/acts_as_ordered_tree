@@ -661,6 +661,11 @@ describe ActsAsOrderedTree do
       it { should_not fire_callback(:after_move).when_calling(:move_left) }
       it { should_not fire_callback(:around_move).when_calling(:move_left) }
 
+      it { should fire_callback(:before_reorder).when_calling(:move_higher).once }
+      it { should fire_callback(:after_reorder).when_calling(:move_higher).once }
+
+      it { should_not fire_callback(:before_reorder).when_calling(:move_to_root) }
+
       it "should cache depth on save" do
         record = build :default
 
@@ -740,7 +745,7 @@ describe ActsAsOrderedTree do
     end
   end
 
-  describe "vulnerabilities" do
+  describe "potential vulnerabilities" do
     describe "attempt to link parent to one of descendants" do
       let(:root) { create :default }
       let(:child) { create :default, :parent => root }
