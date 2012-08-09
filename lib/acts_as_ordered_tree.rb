@@ -65,7 +65,8 @@ module ActsAsOrderedTree
 
     if depth_column
       before_create :set_depth!
-      before_save :set_depth!, :if => "#{parent_column}_changed?"
+      before_save   :set_depth!, :if => "#{parent_column}_changed?".to_sym
+      around_move   :update_descendants_depth
     end
 
     unless scope_column_names.empty?

@@ -677,6 +677,17 @@ describe ActsAsOrderedTree do
         record.move_to_left_of child_3
         record.depth.should eq child_3.level
       end
+
+      it "should recalculate depth of descendants" do
+        record = create :default, :parent => child_3
+        record.depth.should eq 2
+
+        child_3.move_to_root
+        record.reload.depth.should eq 1
+
+        child_3.move_to_child_of child_1
+        record.reload.depth.should eq 3
+      end
     end
 
   end

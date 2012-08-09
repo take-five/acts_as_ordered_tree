@@ -324,10 +324,23 @@ module ActsAsOrderedTree
       end
     end
 
-    def destroy_descendants
+    def destroy_descendants #:nodoc:
       descendants.delete_all
       # flush memoization
       @self_and_descendants = nil
+    end
+
+    def update_descendants_depth #:nodoc:
+      depth_was = self[depth_column]
+
+      yield
+
+      diff = self[depth_column] - depth_was
+      if diff != 0
+        sign = diff > 0 ? "+" : "-"
+        # update categories set depth = depth - 1 where id in (...)
+        descendants.update_all(["#{depth_column} = #{depth_column} #{sign} ?", diff.abs])
+      end
     end
 
     def arel #:nodoc:
