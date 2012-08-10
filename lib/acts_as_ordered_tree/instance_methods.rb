@@ -17,6 +17,10 @@ module ActsAsOrderedTree
       end
     end
 
+    def branch?
+      !leaf?
+    end
+
     # Returns true is this is a child node
     def child?
       !root?
@@ -340,6 +344,18 @@ module ActsAsOrderedTree
         sign = diff > 0 ? "+" : "-"
         # update categories set depth = depth - 1 where id in (...)
         descendants.update_all(["#{depth_column} = #{depth_column} #{sign} ?", diff.abs])
+      end
+    end
+
+    def update_counter_cache #:nodoc:
+      parent_id_was = self[parent_column]
+
+      yield
+
+      parent_id_new = self[parent_column]
+      unless parent_id_new == parent_id_was
+        self.class.increment_counter(children_counter_cache_column, parent_id_new) if parent_id_new
+        self.class.decrement_counter(children_counter_cache_column, parent_id_was) if parent_id_was
       end
     end
 

@@ -69,6 +69,10 @@ module ActsAsOrderedTree
       around_move   :update_descendants_depth
     end
 
+    if options[:counter_cache]
+      around_move :update_counter_cache
+    end
+
     unless scope_column_names.empty?
       before_save :set_scope!, :unless => :root?
       validates_with Validators::ScopeValidator, :on => :update, :unless => :root?
