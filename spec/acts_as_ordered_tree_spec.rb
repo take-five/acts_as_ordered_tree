@@ -83,7 +83,7 @@ describe ActsAsOrderedTree do
     end
   end
 
-  describe "#root?, #child?, #leaf? and #root" do
+  describe "#root?, #child?, #leaf?, #branch? and #root" do
     shared_examples "tree with predicates" do |factory_name|
       # create fixture
       let!(:root) { create factory_name }
@@ -100,6 +100,7 @@ describe ActsAsOrderedTree do
         it { should be_root }
         it { should_not be_child }
         it { should_not be_leaf }
+        it { should be_branch }
         its(:root) { should eq root }
         its(:level) { should eq 0 }
       end
@@ -110,6 +111,7 @@ describe ActsAsOrderedTree do
         it { should_not be_root }
         it { should be_child }
         it { should_not be_leaf }
+        it { should be_branch }
         its(:root) { should eq root }
         its(:level) { should eq 1 }
       end
@@ -120,6 +122,7 @@ describe ActsAsOrderedTree do
         it { should_not be_root }
         it { should be_child }
         it { should be_leaf }
+        it { should_not be_branch }
         its(:root) { should eq root }
         its(:level) { should eq 2 }
       end
@@ -128,6 +131,7 @@ describe ActsAsOrderedTree do
         subject { build factory_name }
 
         it { should_not be_leaf }
+        it { should be_branch }
       end
     end
 
@@ -413,19 +417,19 @@ describe ActsAsOrderedTree do
   end
 
   describe "move actions" do
-    let!(:root) { create :default, :name => 'root' }
-    let!(:child_1) { create :default, :parent => root, :name => 'child_1' }
-    let!(:child_2) { create :default, :parent => root, :name => 'child_2' }
-    let!(:child_3) { create :default, :parent => root, :name => 'child_3' }
+    let!(:root) { create :default_with_counter_cache, :name => 'root' }
+    let!(:child_1) { create :default_with_counter_cache, :parent => root, :name => 'child_1' }
+    let!(:child_2) { create :default_with_counter_cache, :parent => root, :name => 'child_2' }
+    let!(:child_3) { create :default_with_counter_cache, :parent => root, :name => 'child_3' }
 
     context "initial" do
-      subject { root }
-
       specify { expect([child_1, child_2, child_3]).to be_sorted }
 
+      subject { root }
       its(:parent_id) { should be_nil }
       its(:level) { should be_zero }
       its(:position) { should eq 1 }
+      its(:categories_count) { should eq 3}
     end
 
     describe "#move_left" do
@@ -525,14 +529,16 @@ describe ActsAsOrderedTree do
         its(:position) { should eq 2 }
 
         it "should not become new root" do
-          Default.root.should eq root
+          DefaultWithCounterCache.root.should eq root
         end
       end
 
-      context "other_children" do
+      context "other_nodes" do
         specify { child_1.reload.position.should eq 1 }
         specify { child_3.reload.position.should eq 2 }
+        specify { root.reload.categories_count.should eq 2 }
       end
+
 
       context "given a root node" do
         before { root.move_to_root }
@@ -547,7 +553,7 @@ describe ActsAsOrderedTree do
     end
 
     describe "#move_to_child_of" do
-      let(:moved_child) { create :default, :name => 'moved_child' }
+      let(:moved_child) { create :default_with_counter_cache, :name => 'moved_child' }
 
       before { moved_child.move_to_child_of root }
       context "moved_child" do
@@ -557,8 +563,9 @@ describe ActsAsOrderedTree do
       end
 
       context "root" do
-        subject { root }
+        subject { root.reload }
         its(:right_sibling) { should be_nil }
+        its(:categories_count) { should eq 4 }
       end
 
       context "given a node which already is children of target" do
@@ -667,7 +674,7 @@ describe ActsAsOrderedTree do
       it { should_not fire_callback(:before_reorder).when_calling(:move_to_root) }
 
       it "should cache depth on save" do
-        record = build :default
+        record = build :default_with_counter_cache
 
         record.depth.should be_nil
         record.save
@@ -679,7 +686,7 @@ describe ActsAsOrderedTree do
       end
 
       it "should recalculate depth of descendants" do
-        record = create :default, :parent => child_3
+        record = create :default_with_counter_cache, :parent => child_3
         record.depth.should eq 2
 
         child_3.move_to_root
@@ -728,10 +735,10 @@ describe ActsAsOrderedTree do
   end
 
   describe "#destroy behavior" do
-    let!(:root) { create :default, :name => 'root' }
-    let!(:child_1) { create :default, :parent => root, :name => 'child_1' }
-    let!(:child_2) { create :default, :parent => root, :name => 'child_2' }
-    let!(:child_3) { create :default, :parent => root, :name => 'child_3' }
+    let!(:root) { create :default_with_counter_cache, :name => 'root' }
+    let!(:child_1) { create :default_with_counter_cache, :parent => root, :name => 'child_1' }
+    let!(:child_2) { create :default_with_counter_cache, :parent => root, :name => 'child_2' }
+    let!(:child_3) { create :default_with_counter_cache, :parent => root, :name => 'child_3' }
 
     describe "it should destroy descendants" do
       subject { root }
@@ -753,6 +760,10 @@ describe ActsAsOrderedTree do
 
       its(:left_sibling) { should eq child_1 }
       its(:position) { should eq 2 }
+
+      specify "root categories_count should decrease" do
+        root.reload.categories_count.should eq 2
+      end
     end
   end
 
