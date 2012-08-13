@@ -425,7 +425,7 @@ describe ActsAsOrderedTree do
     context "initial" do
       specify { expect([child_1, child_2, child_3]).to be_sorted }
 
-      subject { root }
+      subject { root.reload }
       its(:parent_id) { should be_nil }
       its(:level) { should be_zero }
       its(:position) { should eq 1 }
