@@ -69,7 +69,7 @@ module ActsAsOrderedTree
       around_move   :update_descendants_depth
     end
 
-    if options[:counter_cache]
+    if children_counter_cache_column
       around_move :update_counter_cache
     end
 

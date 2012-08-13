@@ -83,7 +83,7 @@ describe ActsAsOrderedTree do
     end
   end
 
-  describe "#root?, #child?, #leaf? and #root" do
+  describe "#root?, #child?, #leaf?, #branch? and #root" do
     shared_examples "tree with predicates" do |factory_name|
       # create fixture
       let!(:root) { create factory_name }
@@ -100,6 +100,7 @@ describe ActsAsOrderedTree do
         it { should be_root }
         it { should_not be_child }
         it { should_not be_leaf }
+        it { should be_branch }
         its(:root) { should eq root }
         its(:level) { should eq 0 }
       end
@@ -110,6 +111,7 @@ describe ActsAsOrderedTree do
         it { should_not be_root }
         it { should be_child }
         it { should_not be_leaf }
+        it { should be_branch }
         its(:root) { should eq root }
         its(:level) { should eq 1 }
       end
@@ -120,6 +122,7 @@ describe ActsAsOrderedTree do
         it { should_not be_root }
         it { should be_child }
         it { should be_leaf }
+        it { should_not be_branch }
         its(:root) { should eq root }
         its(:level) { should eq 2 }
       end
@@ -128,6 +131,7 @@ describe ActsAsOrderedTree do
         subject { build factory_name }
 
         it { should_not be_leaf }
+        it { should be_branch }
       end
     end
 
