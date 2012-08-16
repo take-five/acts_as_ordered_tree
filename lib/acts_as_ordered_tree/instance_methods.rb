@@ -136,6 +136,7 @@ module ActsAsOrderedTree
     def right_sibling
       siblings.
           where( arel[position_column].gt(self[position_column]) ).
+          reorder( arel[position_column].asc ).
           first
     end
     alias lower_item right_sibling
@@ -236,12 +237,12 @@ module ActsAsOrderedTree
         when :left  then
           parent_id = target[parent_column]
           position = target[position_column]
-          position -= 1 if target[parent_column] == self[parent_column] && target[position_column] > position_was # right
+          position -= 1 if target[parent_column] == send("#{parent_column}_was") && target[position_column] > position_was # right
           depth = target.level
         when :right then
           parent_id = target[parent_column]
           position = target[position_column]
-          position += 1 if target[parent_column] != self[parent_column] || target[position_column] < position_was # left
+          position += 1 if target[parent_column] != send("#{parent_column}_was") || target[position_column] < position_was # left
           depth = target.level
         when :child then
           parent_id = target.id
@@ -365,9 +366,9 @@ module ActsAsOrderedTree
 
     def ordered_tree_scope
       if scope_column_names.empty?
-        self.class.scoped
+        self.class.base_class.scoped
       else
-        self.class.where Hash[scope_column_names.map { |column| [column, self[column]] }]
+        self.class.base_class.where Hash[scope_column_names.map { |column| [column, self[column]] }]
       end
     end
   end # module InstanceMethods

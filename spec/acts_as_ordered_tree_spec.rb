@@ -432,6 +432,22 @@ describe ActsAsOrderedTree do
       its(:categories_count) { should eq 3}
     end
 
+    context "on_save_when_parent_changed" do
+      example "move_1_to_root" do
+        child_1.parent = nil
+        child_1.save
+        expect(child_1.position).to eq 2
+        expect([root, child_1]).to be_sorted
+      end
+
+      example "move_3_to_root" do
+        child_3.parent = nil
+        child_3.save
+        expect(child_3.position).to eq 2
+        expect([root, child_3]).to be_sorted
+      end
+    end
+
     describe "#move_left" do
       example "move_1_left" do
         expect{ child_1.move_left }.to raise_exception ActiveRecord::ActiveRecordError

@@ -78,9 +78,10 @@ module ActsAsOrderedTree
       validates_with Validators::ScopeValidator, :on => :update, :unless => :root?
     end
 
-    after_save "move_to_child_with_index(parent, #{position_column})", :if => position_column
     after_save :move_to_root, :unless => [position_column, parent_column]
     after_save 'move_to_child_of(parent)', :if => parent_column, :unless => position_column
+    after_save "move_to_child_with_index(parent, #{position_column})",
+               :if => "#{position_column} && (#{position_column}_changed? || #{parent_column}_changed?)"
 
     before_destroy :destroy_descendants
     after_destroy "decrement_lower_positions(#{parent_column}_was, #{position_column}_was)", :if => position_column
