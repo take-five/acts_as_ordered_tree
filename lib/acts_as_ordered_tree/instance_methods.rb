@@ -179,7 +179,7 @@ module ActsAsOrderedTree
     # Move the node to the child of another node with specify index
     def move_to_child_with_index(node, index)
       raise ActiveRecord::ActiveRecordError, "index cant be nil" unless index
-      new_siblings = node.try(:children) || self.class.roots.delete_if { |root_node| root_node == self }
+      new_siblings = (node.try(:children) || self.class.roots).reject { |root_node| root_node == self }
 
       if new_siblings.empty?
         node ? move_to_child_of(node) : move_to_root

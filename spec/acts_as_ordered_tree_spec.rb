@@ -435,16 +435,23 @@ describe ActsAsOrderedTree do
     context "on_save_when_parent_changed" do
       example "move_1_to_root" do
         child_1.parent = nil
-        child_1.save
+        expect{ child_1.save! }.to_not raise_exception
         expect(child_1.position).to eq 2
         expect([root, child_1]).to be_sorted
       end
 
       example "move_3_to_root" do
         child_3.parent = nil
-        child_3.save
+        expect{ child_3.save! }.to_not raise_exception
         expect(child_3.position).to eq 2
         expect([root, child_3]).to be_sorted
+      end
+
+      example "move_grandchild" do
+        grandchild = FactoryGirl.create(:default_with_counter_cache, :parent => child_3)
+        grandchild.parent = child_2
+        expect{ grandchild.save! }.to_not raise_exception
+        expect([grandchild]).to eq child_2.children
       end
     end
 
