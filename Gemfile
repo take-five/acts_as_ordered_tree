@@ -6,3 +6,4 @@ gemspec
 gem "sqlite3", :platforms => :ruby
 gem "activerecord-jdbcsqlite3-adapter", :platforms => :jruby
 gem "simplecov", :platform => :ruby_19
+gem "rake", "~> 0.9.2"
