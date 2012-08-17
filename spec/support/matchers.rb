@@ -92,7 +92,7 @@ module RSpec::Matchers
     def with_temporary_callback
       kind, name = @callback.to_s.split('_')
 
-      method_name = :"__temporary_callback_#{object_id}"
+      method_name = :"__temporary_callback_#{object_id.abs}"
 
       @subject.class.class_eval <<-CODE
         def #{method_name}
