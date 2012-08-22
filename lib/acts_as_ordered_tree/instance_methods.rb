@@ -329,9 +329,7 @@ module ActsAsOrderedTree
       end
     end
 
-    def destroy_descendants #:nodoc:
-      descendants.delete_all
-      # flush memoization
+    def flush_descendants #:nodoc:
       @self_and_descendants = nil
     end
 

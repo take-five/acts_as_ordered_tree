@@ -33,7 +33,8 @@ module ActsAsOrderedTree
       :class_name    => name,
       :foreign_key   => options[:parent_column],
       :order         => options[:position_column],
-      :inverse_of    => (:parent unless options[:polymorphic])
+      :inverse_of    => (:parent unless options[:polymorphic]),
+      :dependent     => :destroy
     }
 
     [:before_add, :after_add, :before_remove, :after_remove].each do |callback|
@@ -83,7 +84,7 @@ module ActsAsOrderedTree
     after_save "move_to_child_with_index(parent, #{position_column})",
                :if => "#{position_column} && (#{position_column}_changed? || #{parent_column}_changed?)"
 
-    before_destroy :destroy_descendants
+    before_destroy :flush_descendants
     after_destroy "decrement_lower_positions(#{parent_column}_was, #{position_column}_was)", :if => position_column
 
     # setup validations
