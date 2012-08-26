@@ -1,3 +1,5 @@
+require "acts_as_ordered_tree/adapters/postgresql_adapter"
+
 module ActsAsOrderedTree
   module ClassMethods
     extend ActiveSupport::Concern
@@ -23,6 +25,47 @@ module ActsAsOrderedTree
       private
       def children_counter_cache? #:nodoc:
         children_counter_cache_column && columns_hash.key?(children_counter_cache_column.to_s)
+      end
+
+      def setup_ordered_tree_adapter #:nodoc:
+        include "ActsAsOrderedTree::Adapters::#{connection.class.name.demodulize}".constantize
+      rescue NameError, LoadError
+        # ignore
+      end
+
+      def setup_ordered_tree_callbacks #:nodoc:
+        define_model_callbacks :move, :reorder
+
+        if depth_column
+          before_create :set_depth!
+          before_save   :set_depth!, :if => "#{parent_column}_changed?".to_sym
+          around_move   :update_descendants_depth
+        end
+
+        if children_counter_cache_column
+          around_move :update_counter_cache
+        end
+
+        unless scope_column_names.empty?
+          before_save :set_scope!, :unless => :root?
+        end
+
+        after_save :move_to_root, :unless => [position_column, parent_column]
+        after_save 'move_to_child_of(parent)', :if => parent_column, :unless => position_column
+        after_save "move_to_child_with_index(parent, #{position_column})",
+                   :if => "#{position_column} && (#{position_column}_changed? || #{parent_column}_changed?)"
+
+        before_destroy :flush_descendants
+        after_destroy "decrement_lower_positions(#{parent_column}_was, #{position_column}_was)", :if => position_column
+      end
+
+      def setup_ordered_tree_validations #:nodoc:
+        unless scope_column_names.empty?
+          validates_with Validators::ScopeValidator, :on => :update, :unless => :root?
+        end
+
+        # setup validations
+        validates_with Validators::CyclicReferenceValidator, :on => :update, :if => :parent
       end
     end # module ClassMethods
   end # module ClassMethods

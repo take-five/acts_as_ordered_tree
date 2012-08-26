@@ -1,7 +1,6 @@
 require "active_record"
 require "acts_as_ordered_tree/version"
 require "acts_as_ordered_tree/class_methods"
-require "acts_as_ordered_tree/fake_scope"
 require "acts_as_ordered_tree/instance_methods"
 require "acts_as_ordered_tree/validators"
 
@@ -56,43 +55,21 @@ module ActsAsOrderedTree
                :counter_cache => options[:counter_cache],
                :inverse_of => (:children unless options[:polymorphic])
 
-    define_model_callbacks :move, :reorder
-
     include ClassMethods
     include InstanceMethods
-
-    # protect position&depth from mass-assignment
-    attr_protected depth_column, position_column
-
-    if depth_column
-      before_create :set_depth!
-      before_save   :set_depth!, :if => "#{parent_column}_changed?".to_sym
-      around_move   :update_descendants_depth
-    end
-
-    if children_counter_cache_column
-      around_move :update_counter_cache
-    end
-
-    unless scope_column_names.empty?
-      before_save :set_scope!, :unless => :root?
-      validates_with Validators::ScopeValidator, :on => :update, :unless => :root?
-    end
-
-    after_save :move_to_root, :unless => [position_column, parent_column]
-    after_save 'move_to_child_of(parent)', :if => parent_column, :unless => position_column
-    after_save "move_to_child_with_index(parent, #{position_column})",
-               :if => "#{position_column} && (#{position_column}_changed? || #{parent_column}_changed?)"
-
-    before_destroy :flush_descendants
-    after_destroy "decrement_lower_positions(#{parent_column}_was, #{position_column}_was)", :if => position_column
-
-    # setup validations
-    validates_with Validators::CyclicReferenceValidator, :on => :update, :if => :parent
+    setup_ordered_tree_adapter
+    setup_ordered_tree_callbacks
+    setup_ordered_tree_validations
   end # def acts_as_ordered_tree
 
   # Mixed into both classes and instances to provide easy access to the column names
   module Columns
+    extend ActiveSupport::Concern
+
+    included do
+      attr_protected depth_column, position_column
+    end
+
     def parent_column
       acts_as_ordered_tree_options[:parent_column]
     end

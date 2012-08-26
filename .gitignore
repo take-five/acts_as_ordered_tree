@@ -6,3 +6,4 @@ pkg/*
 coverage/*
 .rbx/*
 gemfiles/*.lock
+*.sqlite3.*

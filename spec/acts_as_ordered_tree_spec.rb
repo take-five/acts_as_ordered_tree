@@ -1,6 +1,6 @@
 require File.expand_path('../spec_helper', __FILE__)
 
-describe ActsAsOrderedTree do
+describe ActsAsOrderedTree, :transactional do
   describe "defaults" do
     subject { Default }
 
@@ -207,7 +207,6 @@ describe ActsAsOrderedTree do
       subject { grandchild.self_and_ancestors }
 
       it { should be_a ActiveRecord::Relation }
-      it { should be_loaded }
       it { should have(3).items }
       its(:first) { should eq root }
       its(:last) { should eq subject }
@@ -217,7 +216,6 @@ describe ActsAsOrderedTree do
       subject { child.self_and_ancestors }
 
       it { should be_a ActiveRecord::Relation }
-      it { should be_loaded }
       it { should have(2).items }
       its(:first) { should eq root }
       its(:last) { should eq subject }
@@ -227,9 +225,28 @@ describe ActsAsOrderedTree do
       subject { root.self_and_ancestors }
 
       it { should be_a ActiveRecord::Relation }
-      it { should be_loaded }
       it { should have(1).item }
       its(:first) { should eq root }
+    end
+
+    context "when record is new" do
+      let(:record) { build(:default, :parent => grandchild) }
+      subject { record.self_and_ancestors }
+
+      it { should have(4).items }
+      it { should include root }
+      it { should include child }
+      it { should include grandchild }
+      it { should include record }
+    end
+
+    context "when parent is changed" do
+      before { grandchild.parent = root }
+      subject { grandchild.self_and_ancestors }
+
+      it { should include root }
+      it { should_not include child }
+      it { should include grandchild }
     end
   end
 
@@ -243,7 +260,6 @@ describe ActsAsOrderedTree do
       subject { grandchild.ancestors }
 
       it { should be_a ActiveRecord::Relation }
-      it { should be_loaded }
       it { should have(2).items }
       its(:first) { should eq root }
       its(:last) { should eq child }
@@ -253,7 +269,6 @@ describe ActsAsOrderedTree do
       subject { child.ancestors }
 
       it { should be_a ActiveRecord::Relation }
-      it { should be_loaded }
       it { should have(1).item }
       its(:first) { should eq root }
     end
@@ -262,7 +277,6 @@ describe ActsAsOrderedTree do
       subject { root.ancestors }
 
       it { should be_a ActiveRecord::Relation }
-      it { should be_loaded }
       it { should be_empty }
     end
   end
@@ -277,7 +291,6 @@ describe ActsAsOrderedTree do
       subject { grandchild.self_and_descendants }
 
       it { should be_a ActiveRecord::Relation }
-      it { should be_loaded }
       it { should have(1).item }
       its(:first) { should eq grandchild }
     end
@@ -286,7 +299,6 @@ describe ActsAsOrderedTree do
       subject { child.self_and_descendants }
 
       it { should be_a ActiveRecord::Relation }
-      it { should be_loaded }
       it { should have(2).items }
       its(:first) { should eq child }
       its(:last) { should eq grandchild }
@@ -296,7 +308,6 @@ describe ActsAsOrderedTree do
       subject { root.self_and_descendants }
 
       it { should be_a ActiveRecord::Relation }
-      it { should be_loaded }
       it { should have(3).items }
       its(:first) { should eq root }
       its(:last) { should eq grandchild }

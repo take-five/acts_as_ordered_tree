@@ -9,6 +9,12 @@ rvm:
   - rbx-19mode
   - ree
 before_install: gem install bundler
+before_script:
+  - sh -c "if [ '$DB' = 'pg' ]; then psql -c 'create database acts_as_ordered_tree_test;' -U postgres; fi"
+env:
+  - DB=sqlite3
+  #- DB=mysql
+  - DB=pg
 gemfile:
   - gemfiles/rails3.0.gemfile
   - gemfiles/rails3.1.gemfile

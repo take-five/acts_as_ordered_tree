@@ -8,6 +8,10 @@ This extension is mostly compatible with [`awesome_nested_set`](https://github.c
 ## Requirements
 Gem depends on `active_record >= 3`. We test it with `rails-3.0`, `rails-3.1`, `rails-3.2` and with `ruby-1.9.3`, `ruby-1.9.2`, `ruby-1.8.7`, `jruby-1.6.7` and `rubinius-2.0`.
 
+## Features
+1. Supports PostgreSQL recursive queries (requires at least `postgresql-8.3`)
+2. Holds integrity control via pessimistic database locks. Common situation for `acts_as_list` users is non-unique positions within list. It happens when two concurrent users modify list sumultaneously. `acts_as_ordered_tree` uses pessimistic locks to keep your tree consistent.
+
 ## Installation
 Install it via rubygems:
 
@@ -17,7 +21,7 @@ gem install acts_as_ordered_tree
 
 ## Usage
 
-To make use of `acts_as_ordered_tree`, your model needs to have 2 fields: parent_id and position. You can also have an optional fields: depth and children_count:
+To make use of `acts_as_ordered_tree`, your model needs to have 2 fields: parent_id and position. You can also have an optional fields: `depth` and `children_count`:
 ```ruby
 class CreateCategories < ActiveRecord::Migration
   def self.up

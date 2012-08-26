@@ -3,7 +3,12 @@ source "http://rubygems.org"
 # Specify your gem's dependencies in acts_as_ordered_tree.gemspec
 gemspec
 
-gem "sqlite3", :platforms => :ruby
-gem "activerecord-jdbcsqlite3-adapter", :platforms => :jruby
+gem "pg", :platform => :ruby
+gem "sqlite3", :platform => :ruby
+gem 'mysql2', :platform => :ruby
+
+gem "activerecord-jdbcpostgresql-adapter", "~> 1.2.2", :platform => :jruby
+gem "activerecord-jdbcsqlite3-adapter", "~> 1.2.2", :platform => :jruby
+gem "activerecord-jdbcmysql-adapter", "~> 1.2.2", :platform => :jruby
+
 gem "simplecov", :platform => :ruby_19
-gem "rake", "~> 0.9.2"
