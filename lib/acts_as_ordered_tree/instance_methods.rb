@@ -384,21 +384,27 @@ module ActsAsOrderedTree
     # Internal
     def reorder!(parent_id, position_was, position)
       assignments = if position_was
-        "#{position_column} = CASE " +
-            "WHEN #{position_column} = :position_was " +
-            "THEN :position " +
-            "WHEN #{position_column} = :position " +
-            "THEN :position_was " +
-            "ELSE #{position_column} " +
-        "END"
+        <<-SQL
+        #{position_column} = CASE
+            WHEN #{position_column} = :position_was
+            THEN :position
+            WHEN #{position_column} <= :position AND #{position_column} > :position_was AND :position > :position_was
+            THEN #{position_column} - 1
+            WHEN #{position_column} >= :position AND #{position_column} < :position_was AND :position < :position_was
+            THEN #{position_column} + 1
+            ELSE #{position_column}
+        END
+        SQL
       else
-        "#{position_column} = CASE " +
-            "WHEN #{position_column} > :position " +
-            "THEN #{position_column} + 1 " +
-            "WHEN #{position_column} IS NULL " +
-            "THEN :position " +
-            "ELSE #{position_column} " +
-        "END"
+        <<-SQL
+        #{position_column} = CASE
+            WHEN #{position_column} > :position
+            THEN #{position_column} + 1
+            WHEN #{position_column} IS NULL
+            THEN :position
+            ELSE #{position_column}
+        END
+        SQL
       end
 
       conditions = arel[parent_column].eq(parent_id)
