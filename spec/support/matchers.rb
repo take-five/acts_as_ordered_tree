@@ -118,7 +118,7 @@ module RSpec::Matchers
     def matches?(*records)
       @records = Array.wrap(records).flatten
 
-      @records.sort_by { |record| record[record.position_column] } == @records
+      @records.sort_by { |record| record.reload[record.position_column] } == @records
     end
 
     def failure_message_for_should
