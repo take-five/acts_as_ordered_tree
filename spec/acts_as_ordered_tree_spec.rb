@@ -729,6 +729,32 @@ describe ActsAsOrderedTree, :transactional do
         child_3.move_to_child_of child_1
         record.reload.depth.should eq 3
       end
+
+      context "DefaultWithCallbacks" do
+        let!(:cb_root_1) { create :default_with_callbacks, :name => 'root_1' }
+        let!(:cb_root_2) { create :default_with_callbacks, :name => 'root_2' }
+        let!(:cb_child_1) { create :default_with_callbacks, :name => 'child_1', :parent => cb_root_1 }
+        let!(:cb_child_2) { create :default_with_callbacks, :name => 'child_2', :parent => cb_root_1 }
+
+        specify "new parent_id should be available in before_move" do
+          cb_root_2.stub(:before_move) { cb_root_2.parent_id.should eq cb_root_1.id }
+          cb_root_2.move_to_left_of cb_child_1
+        end
+
+        specify "new position should be available in before_reorder" do
+          cb_child_2.stub(:before_reorder) { cb_child_2.position.should eq 1 }
+          cb_child_2.move_to_left_of cb_child_1
+        end
+      end
+
+    end
+
+    context "changed attributes" do
+      specify "changed attributes should be saved" do
+        child_2.name = 'name100'
+        child_2.move_to_left_of child_1
+        child_2.reload.name.should eq 'name100'
+      end
     end
 
   end

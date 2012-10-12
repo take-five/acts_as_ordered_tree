@@ -302,6 +302,7 @@ module ActsAsOrderedTree
         position_was = send "#{position_column}_was".intern
         parent_id_was = send "#{parent_column}_was".intern
         parent_id, position, depth = compute_ordered_tree_columns(target, pos)
+        self[parent_column], self[position_column] = parent_id, position
 
         # nothing changed - quit
         return if parent_id == parent_id_was && position == position_was
@@ -378,7 +379,7 @@ module ActsAsOrderedTree
                :position => position,
                :depth => depth}
 
-      ordered_tree_scope.where(conditions).update_all([assignments, binds])
+      update_changed_attributes! conditions, assignments, binds
     end
 
     # Internal
@@ -408,10 +409,24 @@ module ActsAsOrderedTree
       end
 
       conditions = arel[parent_column].eq(parent_id)
-
       binds = {:position_was => position_was, :position => position}
 
-      ordered_tree_scope.where(conditions).update_all([assignments, binds])
+      update_changed_attributes! conditions, assignments, binds
+    end
+
+    def update_changed_attributes!(scope_conditions, assignments, binds)
+      # update externally changed attributes
+      external_changed_attrs = changed - [parent_column, position_column, depth_column]
+      unless external_changed_attrs.empty?
+        external_assignments = external_changed_attrs.inject({}) do |hash, attribute|
+          hash[attribute] = self[attribute]
+          hash
+        end
+        ordered_tree_scope.update_all(external_assignments, self.class.primary_key => id)
+      end
+
+      # update internal attributes
+      ordered_tree_scope.where(scope_conditions).update_all([assignments, binds])
     end
 
     # recursively load descendants
@@ -448,7 +463,7 @@ module ActsAsOrderedTree
 
     # Used in built-in around_move routine
     def update_counter_cache #:nodoc:
-      parent_id_was = self[parent_column]
+      parent_id_was = send "#{parent_column}_was"
 
       yield
 
