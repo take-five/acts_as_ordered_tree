@@ -306,6 +306,9 @@ module ActsAsOrderedTree
         # nothing changed - quit
         return if parent_id == parent_id_was && position == position_was
 
+        self.class.find(self, :lock => true)
+        self[position_column], self[parent_column] = position, parent_id
+
         move_kind = case
           when id_was && parent_id != parent_id_was then :move
           when id_was && position  != position_was  then :reorder
@@ -363,7 +366,7 @@ module ActsAsOrderedTree
               "THEN :depth " +
               "ELSE #{depth_column} " +
           "END" if depth_column)
-      ].compact.join(', ')
+      ]
 
       conditions = arel[pk].eq(id).or(
         arel[parent_column].eq(parent_id_was)
@@ -371,47 +374,61 @@ module ActsAsOrderedTree
         arel[parent_column].eq(parent_id)
       )
 
-      binds = {:id => id,
-               :parent_id_was => parent_id_was,
+      binds = {:parent_id_was => parent_id_was,
                :parent_id => parent_id,
                :position_was => position_was,
                :position => position,
                :depth => depth}
 
-      ordered_tree_scope.where(conditions).update_all([assignments, binds])
+      update_changed_attributes! conditions, assignments, binds
     end
 
     # Internal
     def reorder!(parent_id, position_was, position)
-      assignments = if position_was
-        <<-SQL
-        #{position_column} = CASE
-            WHEN #{position_column} = :position_was
-            THEN :position
-            WHEN #{position_column} <= :position AND #{position_column} > :position_was AND :position > :position_was
-            THEN #{position_column} - 1
-            WHEN #{position_column} >= :position AND #{position_column} < :position_was AND :position < :position_was
-            THEN #{position_column} + 1
-            ELSE #{position_column}
-        END
-        SQL
-      else
-        <<-SQL
-        #{position_column} = CASE
-            WHEN #{position_column} > :position
-            THEN #{position_column} + 1
-            WHEN #{position_column} IS NULL
-            THEN :position
-            ELSE #{position_column}
-        END
-        SQL
-      end
+      assignments = [
+        if position_was
+          <<-SQL
+          #{position_column} = CASE
+              WHEN #{position_column} = :position_was
+              THEN :position
+              WHEN #{position_column} <= :position AND #{position_column} > :position_was AND :position > :position_was
+              THEN #{position_column} - 1
+              WHEN #{position_column} >= :position AND #{position_column} < :position_was AND :position < :position_was
+              THEN #{position_column} + 1
+              ELSE #{position_column}
+          END
+          SQL
+        else
+          <<-SQL
+          #{position_column} = CASE
+              WHEN #{position_column} > :position
+              THEN #{position_column} + 1
+              WHEN #{position_column} IS NULL
+              THEN :position
+              ELSE #{position_column}
+          END
+          SQL
+        end
+      ]
 
       conditions = arel[parent_column].eq(parent_id)
-
       binds = {:position_was => position_was, :position => position}
 
-      ordered_tree_scope.where(conditions).update_all([assignments, binds])
+      update_changed_attributes! conditions, assignments, binds
+    end
+
+    def update_changed_attributes!(scope_conditions, assignments, binds)
+      # add assignments for externally changed attributes
+      internal_attributes = [parent_column.to_s, position_column.to_s, depth_column.to_s, self.class.primary_key]
+      external_changed_attrs = changed - internal_attributes
+      unless external_changed_attrs.empty?
+        external_changed_attrs.each do |attr|
+          assignments << "#{attr} = CASE WHEN #{self.class.primary_key} = :id THEN :#{attr} ELSE #{attr} END"
+          binds[attr.to_sym] = self[attr]
+        end
+      end
+
+      ordered_tree_scope.where(scope_conditions).update_all([assignments.compact.join(', '), {:id => id}.merge(binds)])
     end
 
     # recursively load descendants
@@ -448,7 +465,7 @@ module ActsAsOrderedTree
 
     # Used in built-in around_move routine
     def update_counter_cache #:nodoc:
-      parent_id_was = self[parent_column]
+      parent_id_was = send "#{parent_column}_was"
 
       yield
 
