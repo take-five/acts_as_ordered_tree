@@ -418,7 +418,7 @@ module ActsAsOrderedTree
     end
 
     def update_changed_attributes!(scope_conditions, assignments, binds)
-      # assignments for externally changed attributes
+      # add assignments for externally changed attributes
       internal_attributes = [parent_column.to_s, position_column.to_s, depth_column.to_s, self.class.primary_key]
       external_changed_attrs = changed - internal_attributes
       unless external_changed_attrs.empty?
@@ -428,7 +428,6 @@ module ActsAsOrderedTree
         end
       end
 
-      # update internal attributes
       ordered_tree_scope.where(scope_conditions).update_all([assignments.compact.join(', '), {:id => id}.merge(binds)])
     end
 
