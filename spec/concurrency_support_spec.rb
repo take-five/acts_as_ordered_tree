@@ -7,14 +7,11 @@ if ActiveRecord::VERSION::STRING >= "3.1" && ENV['DB'] != 'sqlite3'
     module Concurrency
       # run block in its own thread, create +size+ threads
       def pool(size)
-        body = proc do |x|
-          ActiveRecord::Base.connection_pool.with_connection do
-            yield x
+        size.times.map { |x|
+          Thread.new do
+            ActiveRecord::Base.connection_pool.with_connection { yield x }
           end
-        end
-        threads = size.times.map { |x| Thread.new { body.call(x) } }
-
-        threads.each(&:join)
+        }.each(&:join)
       end
     end
     include Concurrency

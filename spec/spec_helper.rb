@@ -50,6 +50,7 @@ RSpec.configure do |config|
     ensure
       Default.delete_all
       DefaultWithCounterCache.delete_all
+      DefaultWithCallbacks.delete_all
       Scoped.delete_all
     end
   end
