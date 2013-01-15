@@ -682,6 +682,23 @@ describe ActsAsOrderedTree, :transactional do
         expect{ root.move_to_child_with_index child_1, 1 }.to raise_exception ActiveRecord::ActiveRecordError
       end
 
+      context "with scoped tree" do
+        let!(:root1) { create :scoped, :scope_type => 's1' }
+        let!(:node1) { create :scoped, :scope_type => 's1', :parent => root1 }
+        let!(:root2) { create :scoped, :scope_type => 's2' }
+        let!(:node2) { create :scoped, :scope_type => 's2', :parent => root2 }
+
+        example "move_node1_to_root" do
+          node1.should_receive(:move_to_right_of).with(root1)
+          node1.move_to_child_with_index nil, 100
+        end
+
+        example "move_node2_to_root" do
+          node2.should_receive(:move_to_right_of).with(root2)
+          node2.move_to_child_with_index nil, 100
+        end
+      end
+
     end
 
     describe "#insert_at" do
