@@ -194,7 +194,7 @@ module ActsAsOrderedTree
       raise ActiveRecord::ActiveRecordError, "index can't be nil" unless index
 
       tenacious_transaction do
-        new_siblings = (node.try(:children) || self.class.roots).
+        new_siblings = (node.try(:children) || ordered_tree_scope.roots).
             reload.
             lock(true).
             reject { |root_node| root_node == self }
