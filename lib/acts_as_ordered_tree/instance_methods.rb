@@ -243,6 +243,8 @@ module ActsAsOrderedTree
     end
 
     def compute_ordered_tree_columns(target, pos) #:nodoc:
+      position_was = send("#{position_column}_was")
+
       case pos
         when :root  then
           parent_id = nil
@@ -256,12 +258,12 @@ module ActsAsOrderedTree
         when :left  then
           parent_id = target[parent_column]
           position = target[position_column]
-          position -= 1 if target[parent_column] == send("#{parent_column}_was") && target[position_column] > position_was # right
+          position -= 1 if position_was && target[parent_column] == send("#{parent_column}_was") && target[position_column] > position_was # right
           depth = target.level
         when :right then
           parent_id = target[parent_column]
           position = target[position_column]
-          position += 1 if target[parent_column] != send("#{parent_column}_was") || target[position_column] < position_was # left
+          position += 1 if target[parent_column] != send("#{parent_column}_was") || position_was.blank? || target[position_column] < position_was # left
           depth = target.level
         when :child then
           parent_id = target.id
@@ -299,8 +301,8 @@ module ActsAsOrderedTree
           raise ActiveRecord::ActiveRecordError, "Impossible move"
         end
 
-        position_was = send "#{position_column}_was".intern
-        parent_id_was = send "#{parent_column}_was".intern
+        position_was = send("#{position_column}_was")
+        parent_id_was = send("#{parent_column}_was")
         parent_id, position, depth = compute_ordered_tree_columns(target, pos)
 
         # nothing changed - quit

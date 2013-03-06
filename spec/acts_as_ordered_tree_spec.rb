@@ -875,6 +875,13 @@ describe ActsAsOrderedTree, :transactional do
       it "should not throw error" do
         expect{ create :default, :position => 22 }.not_to raise_error
       end
+
+      it "should be saved at proper position" do
+        root = create :default
+
+        node = create :default, :position => 2
+        node.position.should eq 2
+      end
     end
   end
 end
