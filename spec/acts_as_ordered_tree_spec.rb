@@ -209,7 +209,7 @@ describe ActsAsOrderedTree, :transactional do
       it { should be_a ActiveRecord::Relation }
       it { should have(3).items }
       its(:first) { should eq root }
-      its(:last) { should eq subject }
+      its(:last) { should eq grandchild }
     end
 
     context "child" do
@@ -218,7 +218,7 @@ describe ActsAsOrderedTree, :transactional do
       it { should be_a ActiveRecord::Relation }
       it { should have(2).items }
       its(:first) { should eq root }
-      its(:last) { should eq subject }
+      its(:last) { should eq child }
     end
 
     context "root" do
