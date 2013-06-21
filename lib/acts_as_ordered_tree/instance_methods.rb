@@ -453,7 +453,7 @@ module ActsAsOrderedTree
     end
 
     def update_descendants_depth #:nodoc:
-      depth_was = self[depth_column]
+      depth_was = send("#{depth_column}_was")
 
       yield
 

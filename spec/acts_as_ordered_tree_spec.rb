@@ -209,7 +209,7 @@ describe ActsAsOrderedTree, :transactional do
       it { should be_a ActiveRecord::Relation }
       it { should have(3).items }
       its(:first) { should eq root }
-      its(:last) { should eq subject }
+      its(:last) { should eq grandchild }
     end
 
     context "child" do
@@ -218,7 +218,7 @@ describe ActsAsOrderedTree, :transactional do
       it { should be_a ActiveRecord::Relation }
       it { should have(2).items }
       its(:first) { should eq root }
-      its(:last) { should eq subject }
+      its(:last) { should eq child }
     end
 
     context "root" do
@@ -432,6 +432,7 @@ describe ActsAsOrderedTree, :transactional do
     let!(:child_1) { create :default_with_counter_cache, :parent => root, :name => 'child_1' }
     let!(:child_2) { create :default_with_counter_cache, :parent => root, :name => 'child_2' }
     let!(:child_3) { create :default_with_counter_cache, :parent => root, :name => 'child_3' }
+    let!(:child_4) { create :default_with_counter_cache, :parent => child_3, :name => 'child_4' }
 
     context "initial" do
       specify { expect([child_1, child_2, child_3]).to be_sorted }
@@ -456,6 +457,9 @@ describe ActsAsOrderedTree, :transactional do
         expect{ child_3.save! }.to_not raise_exception
         expect(child_3.position).to eq 2
         expect([root, child_3]).to be_sorted
+
+        expect(child_3.reload.level).to eq 0
+        expect(child_4.reload.level).to eq 1
       end
 
       example "move_grandchild" do
@@ -616,6 +620,23 @@ describe ActsAsOrderedTree, :transactional do
       it { expect([child_1, child_2, child_3, moved_child]).to be_sorted }
       it { expect{ root.move_to_child_of root }.to raise_exception ActiveRecord::ActiveRecordError }
       it { expect{ root.move_to_child_of child_1 }.to raise_exception ActiveRecord::ActiveRecordError }
+
+      context "when node with descendants moved and depth is changed" do
+        before { child_3.move_to_child_of child_2 }
+        before { child_4.reload }
+
+        it "changes parent of child_3" do
+          expect(child_3.parent).to eq child_2
+        end
+
+        it "moves to the end of new parents children list" do
+          expect(child_3).to be_last
+        end
+
+        it "changes depth of child_3 descendants" do
+          expect(child_4.level).to eq 3
+        end
+      end
     end
 
     describe "#move_to_child_with_index" do
