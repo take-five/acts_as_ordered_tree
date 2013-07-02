@@ -29,7 +29,7 @@ module ActsAsOrderedTree
     include Columns
 
     has_many_children_options = {
-      :class_name    => base_class.name,
+      :class_name    => "::#{base_class.name}",
       :foreign_key   => options[:parent_column],
       :order         => options[:position_column],
       :inverse_of    => (:parent unless options[:polymorphic]),
@@ -50,7 +50,7 @@ module ActsAsOrderedTree
     # create associations
     has_many   :children, has_many_children_options
     belongs_to :parent,
-               :class_name => base_class.name,
+               :class_name => "::#{base_class.name}",
                :foreign_key => options[:parent_column],
                :counter_cache => options[:counter_cache],
                :inverse_of => (:children unless options[:polymorphic])
