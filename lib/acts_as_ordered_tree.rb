@@ -31,7 +31,6 @@ module ActsAsOrderedTree
     has_many_children_options = {
       :class_name    => "::#{base_class.name}",
       :foreign_key   => options[:parent_column],
-      :order         => options[:position_column],
       :inverse_of    => (:parent unless options[:polymorphic]),
       :dependent     => :destroy
     }
@@ -40,15 +39,19 @@ module ActsAsOrderedTree
       has_many_children_options[callback] = options[callback] if options.key?(callback)
     end
 
-    if scope_column_names.any?
-      has_many_children_options[:conditions] = proc do
-        [scope_column_names.map { |c| "#{c} = ?" }.join(' AND '),
-         scope_column_names.map { |c| self[c] }]
+    scoped = -> do
+      relation = order(options[:position_column])
+      if scope_column_names.any?
+        relation = relation.where(
+          [scope_column_names.map { |c| "#{c} = ?" }.join(' AND '),
+           scope_column_names.map { |c| self[c] }]
+        )
       end
+      relation
     end
 
     # create associations
-    has_many   :children, has_many_children_options
+    has_many   :children, scoped, has_many_children_options
     belongs_to :parent,
                :class_name => "::#{base_class.name}",
                :foreign_key => options[:parent_column],
@@ -65,10 +68,6 @@ module ActsAsOrderedTree
   # Mixed into both classes and instances to provide easy access to the column names
   module Columns
     extend ActiveSupport::Concern
-
-    included do
-      attr_protected depth_column, position_column
-    end
 
     def parent_column
       acts_as_ordered_tree_options[:parent_column]
