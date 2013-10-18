@@ -66,10 +66,6 @@ module ActsAsOrderedTree
   module Columns
     extend ActiveSupport::Concern
 
-    included do
-      attr_protected depth_column, position_column
-    end
-
     def parent_column
       acts_as_ordered_tree_options[:parent_column]
     end
