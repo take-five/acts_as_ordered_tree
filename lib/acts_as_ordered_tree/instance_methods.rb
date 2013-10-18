@@ -308,7 +308,7 @@ module ActsAsOrderedTree
         # nothing changed - quit
         return if parent_id == parent_id_was && position == position_was
 
-        self.class.find(self, :lock => true)
+        self.class.where(self.class.primary_key => self.to_param).lock(true)
         self[position_column], self[parent_column] = position, parent_id
 
         move_kind = case
@@ -484,7 +484,7 @@ module ActsAsOrderedTree
 
     def ordered_tree_scope #:nodoc:
       if scope_column_names.empty?
-        self.class.base_class.scoped
+        self.class.base_class.all
       else
         self.class.base_class.where Hash[scope_column_names.map { |column| [column, self[column]] }]
       end

@@ -5,11 +5,11 @@ module ActsAsOrderedTree
     extend ActiveSupport::Concern
 
     included do
-      scope :preorder, order(arel_table[position_column].asc)
-      scope :roots, where(arel_table[parent_column].eq(nil)).preorder
+      scope :preorder, -> { order(arel_table[position_column].asc) }
+      scope :roots, -> { where(arel_table[parent_column].eq(nil)).preorder }
 
       # add +leaves+ scope only if counter_cache column present
-      scope :leaves, where(arel_table[children_counter_cache_column].eq(0)) if
+      scope :leaves, -> { where(arel_table[children_counter_cache_column].eq(0)) } if
           children_counter_cache?
 
       # when default value for counter_cache is absent we should set it manually
