@@ -6,7 +6,7 @@ module ActsAsOrderedTree
         relation = class_or_relation
 
         if class_or_relation.is_a?(Class)
-          relation = class_or_relation.scoped
+          relation = class_or_relation.all
           table ||= class_or_relation.arel_table
 
           super(class_or_relation, table)
