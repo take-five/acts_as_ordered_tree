@@ -20,7 +20,9 @@ require "acts_as_ordered_tree"
 require "logger"
 require "yaml"
 
-ActiveRecord::Base.configurations = YAML::load(IO.read(test_dir + "/db/config.yml"))
+config_file = ENV['DBCONF'] || 'config.yml'
+
+ActiveRecord::Base.configurations = YAML::load(IO.read(File.join(test_dir, 'db', config_file)))
 ActiveRecord::Base.establish_connection(ENV['DB'] || "pg")
 ActiveRecord::Base.logger = Logger.new(ENV['DEBUG'] ? $stderr : '/dev/null')
 ActiveRecord::Migration.verbose = false

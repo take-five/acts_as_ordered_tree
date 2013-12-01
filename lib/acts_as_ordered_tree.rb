@@ -5,6 +5,12 @@ require "acts_as_ordered_tree/instance_methods"
 require "acts_as_ordered_tree/validators"
 
 module ActsAsOrderedTree
+  PROTECTED_ATTRIBUTES_SUPPORTED = ActiveRecord::VERSION::STRING < '4.0.0' ||
+    defined?(ProtectedAttributes)
+
+  # can we use has_many :children, :order => :position
+  PLAIN_ORDER_OPTION_SUPPORTED = ActiveRecord::VERSION::STRING < '4.0.0'
+
   # == Usage
   #   class Category < ActiveRecord::Base
   #     acts_as_ordered_tree :parent_column => :parent_id,
@@ -31,7 +37,6 @@ module ActsAsOrderedTree
     has_many_children_options = {
       :class_name    => "::#{base_class.name}",
       :foreign_key   => options[:parent_column],
-      :order         => options[:position_column],
       :inverse_of    => (:parent unless options[:polymorphic]),
       :dependent     => :destroy
     }
@@ -40,15 +45,34 @@ module ActsAsOrderedTree
       has_many_children_options[callback] = options[callback] if options.key?(callback)
     end
 
-    if scope_column_names.any?
-      has_many_children_options[:conditions] = proc do
-        [scope_column_names.map { |c| "#{c} = ?" }.join(' AND '),
-         scope_column_names.map { |c| self[c] }]
+    if PLAIN_ORDER_OPTION_SUPPORTED
+      has_many_children_options[:order] = options[:position_column]
+
+      if scope_column_names.any?
+        has_many_children_options[:conditions] = proc do
+          [scope_column_names.map { |c| "#{c} = ?" }.join(' AND '),
+           scope_column_names.map { |c| self[c] }]
+        end
       end
+
+      has_many :children, has_many_children_options
+    else
+      scope = ->(parent) {
+        relation = order(options[:position_column])
+
+        if scope_column_names.any?
+          relation = relation.where(
+            Hash[scope_column_names.map { |c| [c, parent[c]]}]
+          )
+        end
+
+        relation
+      }
+
+      has_many :children, scope, has_many_children_options
     end
 
-    # create associations
-    has_many   :children, has_many_children_options
+    # create parent association
     belongs_to :parent,
                :class_name => "::#{base_class.name}",
                :foreign_key => options[:parent_column],
@@ -67,7 +91,7 @@ module ActsAsOrderedTree
     extend ActiveSupport::Concern
 
     included do
-      attr_protected depth_column, position_column
+      attr_protected depth_column, position_column if PROTECTED_ATTRIBUTES_SUPPORTED
     end
 
     def parent_column

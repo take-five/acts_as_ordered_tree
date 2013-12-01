@@ -9,11 +9,13 @@ describe ActsAsOrderedTree, :transactional do
     its(:depth_column) { should eq :depth }
     its(:children_counter_cache_column) { be_nil }
 
-    context "instance" do
-      subject { Default.new }
+    if ActsAsOrderedTree::PROTECTED_ATTRIBUTES_SUPPORTED
+      context "instance" do
+        subject { Default.new }
 
-      it { should_not allow_mass_assignment_of(:position) }
-      it { should_not allow_mass_assignment_of(:depth) }
+        it { should_not allow_mass_assignment_of(:position) }
+        it { should_not allow_mass_assignment_of(:depth) }
+      end
     end
   end
 
@@ -30,11 +32,13 @@ describe ActsAsOrderedTree, :transactional do
     its(:position_column) { should eq :red }
     its(:depth_column) { should eq :pitch }
 
-    context "instance" do
-      subject { RenamedColumns.new }
+    if ActsAsOrderedTree::PROTECTED_ATTRIBUTES_SUPPORTED
+      context "instance" do
+        subject { RenamedColumns.new }
 
-      it { should_not allow_mass_assignment_of(:red) }
-      it { should_not allow_mass_assignment_of(:pitch) }
+        it { should_not allow_mass_assignment_of(:red) }
+        it { should_not allow_mass_assignment_of(:pitch) }
+      end
     end
   end
 
@@ -422,7 +426,11 @@ describe ActsAsOrderedTree, :transactional do
 
     subject { node.send :reload_node }
 
-    its(:name) { should eq 'changed' }
+    if ActiveRecord::VERSION::STRING >= '4.0.0'
+      xit 'ActiveRecord::Persistence#reload method ignores :select option since rails-4.0.0'
+    else
+      its(:name) { should eq 'changed' }
+    end
     its(:parent_id) { should be_nil }
     its(:position) { should eq 1 }
   end
@@ -802,7 +810,7 @@ describe ActsAsOrderedTree, :transactional do
     let!(:child1) { create :scoped, :parent => root1 }
     let!(:orphan) do
       record = create :scoped, :parent => root1
-      record.class.update_all({:scope_type => "t0", :position => 1}, {:id => record.id})
+      record.class.where(:id => record.id).update_all(:scope_type => "t0", :position => 1)
       record
     end
 

@@ -1,12 +1,14 @@
 module ActsAsOrderedTree
   module Relation
     class Base < ActiveRecord::Relation
+      EMPTY_SCOPE_METHOD = ActiveRecord::VERSION::STRING < '4.0.0' ? :scoped : :all
+
       # Create from existing +relation+ or from +class+ and +table+
       def initialize(class_or_relation, table = nil)
         relation = class_or_relation
 
         if class_or_relation.is_a?(Class)
-          relation = class_or_relation.scoped
+          relation = class_or_relation.send(EMPTY_SCOPE_METHOD)
           table ||= class_or_relation.arel_table
 
           super(class_or_relation, table)

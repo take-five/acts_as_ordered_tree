@@ -12,7 +12,7 @@ module ActsAsOrderedTree
       begin
         transaction(&block)
       rescue ActiveRecord::StatementInvalid => error
-        raise unless connection.open_transactions.zero?
+        raise unless self.class.connection.open_transactions.zero?
         raise unless error.message =~ DEADLOCK_MESSAGES
         raise unless retry_count < RETRY_COUNT
         retry_count += 1

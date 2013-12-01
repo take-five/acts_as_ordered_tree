@@ -2,6 +2,7 @@ language: ruby
 rvm:
   - 1.9.2
   - 1.9.3
+  - 2.0.0
   - jruby-19mode
   - rbx-19mode
 before_install: gem install bundler
@@ -10,11 +11,12 @@ before_script:
 env:
   - DB=sqlite3
   #- DB=mysql
-  - DB=pg
+  - DB=pg DBCONF=config.travis.yml
 gemfile:
   - gemfiles/rails3.0.gemfile
   - gemfiles/rails3.1.gemfile
   - gemfiles/rails3.2.gemfile
+  - gemfiles/rails4.0.gemfile
 script: "bundle exec rake spec"
 notifications:
   recipients:
