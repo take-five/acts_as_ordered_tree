@@ -6,7 +6,7 @@ Specify this `acts_as` extension if you want to model an ordered tree structure 
 This extension is mostly compatible with [`awesome_nested_set`](https://github.com/collectiveidea/awesome_nested_set/) gem
 
 ## Requirements
-Gem depends on `active_record >= 3`. We test it with `rails-3.0`, `rails-3.1`, `rails-3.2`, `rails-4.0` and with `ruby-1.9.3`, `jruby-1.6.7` and `rubinius-2.0` (sorry, support for ruby 1.9.2 and 1.8.7 is dropped).
+Gem depends on `active_record >= 3`. We test it with `rails-3.0`, `rails-3.1`, `rails-3.2`, `rails-4.0` and with `ruby-1.9.3`, `jruby-1.6.7` and `rubinius-2.1.1` (sorry, support for ruby 1.9.2 and 1.8.7 is dropped).
 
 ## Features
 1. Supports PostgreSQL recursive queries (requires at least `postgresql-8.3`)
