@@ -227,16 +227,6 @@ module ActsAsOrderedTree
     end
 
     private
-    # reloads relevant ordered_tree columns
-    def reload_node #:nodoc:
-      reload(
-        :select => [parent_column,
-                    position_column,
-                    depth_column,
-                    children_counter_cache_column].compact,
-        :lock => true
-      )
-    end
 
     def compute_level #:nodoc:
       ancestors.count
@@ -283,10 +273,7 @@ module ActsAsOrderedTree
     # This method do real node movements
     def move_to(target, pos) #:nodoc:
       tenacious_transaction do
-        if target.is_a? self.class.base_class
-          # lock obtained here
-          target.send(:reload_node)
-        elsif pos != :root && target
+        if pos != :root && target
           # load object if node is not an object
           target = self.class.lock(true).find(target)
         elsif pos == :root
@@ -324,7 +311,7 @@ module ActsAsOrderedTree
             reorder!(parent_id, position_was, position)
           end
 
-          reload_node
+          reload
         end
 
         if move_kind
@@ -332,6 +319,7 @@ module ActsAsOrderedTree
         else
           update.call
         end
+
       end
     end
 
@@ -376,13 +364,14 @@ module ActsAsOrderedTree
         arel[parent_column].eq(parent_id)
       )
 
-      binds = {:parent_id_was => parent_id_was,
+      binds = {:id => id,
+               :parent_id_was => parent_id_was,
                :parent_id => parent_id,
                :position_was => position_was,
                :position => position,
                :depth => depth}
 
-      update_changed_attributes! conditions, assignments, binds
+      ordered_tree_scope.where(conditions).update_all([assignments.compact.join(', '), binds])
     end
 
     # Internal
@@ -414,23 +403,9 @@ module ActsAsOrderedTree
       ]
 
       conditions = arel[parent_column].eq(parent_id)
-      binds = {:position_was => position_was, :position => position}
+      binds = {:id => id, :position_was => position_was, :position => position}
 
-      update_changed_attributes! conditions, assignments, binds
-    end
-
-    def update_changed_attributes!(scope_conditions, assignments, binds)
-      # add assignments for externally changed attributes
-      internal_attributes = [parent_column.to_s, position_column.to_s, depth_column.to_s, self.class.primary_key]
-      external_changed_attrs = changed - internal_attributes
-      unless external_changed_attrs.empty?
-        external_changed_attrs.each do |attr|
-          assignments << "#{attr} = CASE WHEN #{self.class.primary_key} = :id THEN :#{attr} ELSE #{attr} END"
-          binds[attr.to_sym] = self[attr]
-        end
-      end
-
-      ordered_tree_scope.where(scope_conditions).update_all([assignments.compact.join(', '), {:id => id}.merge(binds)])
+      ordered_tree_scope.where(conditions).update_all([assignments.compact.join(', '), binds])
     end
 
     # recursively load descendants
