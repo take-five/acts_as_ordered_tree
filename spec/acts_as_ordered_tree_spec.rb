@@ -415,26 +415,6 @@ describe ActsAsOrderedTree, :transactional do
     end
   end
 
-  describe "#reload_node" do
-    let!(:node) { create :default }
-
-    before do
-      node.name = 'changed'
-      node.parent_id = 200
-      node.position = 1000
-    end
-
-    subject { node.send :reload_node }
-
-    if ActiveRecord::VERSION::STRING >= '4.0.0'
-      xit 'ActiveRecord::Persistence#reload method ignores :select option since rails-4.0.0'
-    else
-      its(:name) { should eq 'changed' }
-    end
-    its(:parent_id) { should be_nil }
-    its(:position) { should eq 1 }
-  end
-
   describe "move actions" do
     let!(:root) { create :default_with_counter_cache, :name => 'root' }
     let!(:child_1) { create :default_with_counter_cache, :parent => root, :name => 'child_1' }
@@ -796,11 +776,12 @@ describe ActsAsOrderedTree, :transactional do
     end
 
     context "changed attributes" do
-      specify "changed attributes should be saved" do
-        child_2.name = 'name100'
+      before do
+        child_2.name = 'changed_100'
         child_2.move_to_left_of child_1
-        child_2.reload.name.should eq 'name100'
       end
+
+      it { child_2.reload.name.should eq 'child_2' }
     end
 
   end
