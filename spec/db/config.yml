@@ -9,5 +9,5 @@ mysql:
   password:
   encoding: utf8
 sqlite3:
-  adapter: sqlite3
+  adapter: <%= "jdbc" if defined? JRUBY_VERSION %>sqlite3
   database: acts_as_ordered_tree.sqlite3.db
