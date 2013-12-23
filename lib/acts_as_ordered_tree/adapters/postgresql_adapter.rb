@@ -1,5 +1,3 @@
-require "acts_as_ordered_tree/relation/recursive"
-
 module ActsAsOrderedTree
   module Adapters
     module PostgreSQLAdapter
@@ -16,8 +14,8 @@ module ActsAsOrderedTree
               INNER JOIN self_and_ancestors ON alias1.id = self_and_ancestors.#{parent_column}
           QUERY
 
-          recursive_scope.with_recursive("self_and_ancestors", query).
-                          order("self_and_ancestors._depth DESC")
+          with_recursive_join(query, 'self_and_ancestors').
+              order('self_and_ancestors._depth DESC')
         else
           ancestors + [self]
         end
@@ -35,8 +33,7 @@ module ActsAsOrderedTree
             INNER JOIN ancestors ON alias1.id = ancestors.#{parent_column}
         QUERY
 
-        recursive_scope.with_recursive("ancestors", query).
-                        order("ancestors._depth DESC")
+        with_recursive_join(query, 'ancestors').order('ancestors._depth DESC')
       end
 
       def root
@@ -54,8 +51,8 @@ module ActsAsOrderedTree
             #{self.class.quoted_table_name} alias1 ON alias1.parent_id = descendants.id
         QUERY
 
-        recursive_scope.with_recursive("descendants", query).
-                        order("descendants._positions ASC")
+        with_recursive_join(query, 'descendants').
+            order('descendants._positions ASC')
       end
 
       def descendants
@@ -65,6 +62,35 @@ module ActsAsOrderedTree
       private
       def recursive_scope
         ActsAsOrderedTree::Relation::Recursive.new(ordered_tree_scope)
+      end
+
+      def with_recursive_join(recursive_query_sql, aliaz)
+        join_sql = 'INNER JOIN (' +
+            "WITH RECURSIVE #{aliaz} AS (" +
+            recursive_query_sql +
+            ") SELECT * FROM #{aliaz} " +
+            ") #{aliaz} ON #{aliaz}.id = #{self.class.quoted_table_name}.id"
+
+        ordered_tree_scope.joins(join_sql)
+      end
+
+      # Rails 3.0 does not support update_all with joins, so we patch it :(
+      if ActiveRecord::VERSION::STRING <= '3.1.0'
+        module Rails30UpdateAllPatch
+          def update_all(updates, conditions = nil, options = {})
+            relation = except(:joins, :where).
+                where(:id => select(klass.arel_table[:id]).except(:order, :limit).arel)
+            relation.update_all(updates, conditions, options)
+          end
+        end
+
+        def with_recursive_join_30(recursive_query_sql, aliaz)
+          relation = with_recursive_join_31(recursive_query_sql, aliaz)
+          relation.extend(Rails30UpdateAllPatch)
+          relation
+        end
+        alias_method :with_recursive_join_31, :with_recursive_join
+        alias_method :with_recursive_join, :with_recursive_join_30
       end
     end
   end

@@ -1,26 +1,26 @@
 ENV['DB'] ||= 'pg'
 test_dir = File.dirname(__FILE__)
 
-require "rubygems"
-require "bundler/setup"
+require 'rubygems'
+require 'bundler/setup'
 
-require "rspec"
-require "rspec-expectations"
+require 'rspec'
+require 'rspec-expectations'
 
 begin
-  require "simplecov"
+  require 'simplecov'
   SimpleCov.start
 rescue LoadError
   #ignore
 end
 
-require "active_record"
-require "factory_girl"
+require 'active_record'
+require 'factory_girl'
 
-require "acts_as_ordered_tree"
-require "logger"
-require "yaml"
-require "erb"
+require 'acts_as_ordered_tree'
+require 'logger'
+require 'yaml'
+require 'erb'
 
 config_file = ENV['DBCONF'] || 'config.yml'
 
@@ -28,12 +28,12 @@ ActiveRecord::Base.configurations = YAML::load(ERB.new(IO.read(File.join(test_di
 ActiveRecord::Base.establish_connection(ENV['DB'])
 ActiveRecord::Base.logger = Logger.new(ENV['DEBUG'] ? $stderr : '/dev/null')
 ActiveRecord::Migration.verbose = false
-load(File.join(test_dir, "db", "schema.rb"))
+load(File.join(test_dir, 'db', 'schema.rb'))
 
-require "shoulda-matchers"
-require "support/models"
-require "support/factories"
-require "support/matchers"
+require 'shoulda-matchers'
+require 'support/models'
+require 'support/factories'
+require 'support/matchers'
 
 RSpec.configure do |config|
   config.include FactoryGirl::Syntax::Methods
