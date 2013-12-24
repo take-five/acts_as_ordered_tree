@@ -28,6 +28,7 @@ ActiveRecord::Base.configurations = YAML::load(ERB.new(IO.read(File.join(test_di
 ActiveRecord::Base.establish_connection(ENV['DB'])
 ActiveRecord::Base.logger = Logger.new(ENV['DEBUG'] ? $stderr : '/dev/null')
 ActiveRecord::Migration.verbose = false
+I18n.enforce_available_locales = false if I18n.respond_to?(:enforce_available_locales=)
 load(File.join(test_dir, 'db', 'schema.rb'))
 
 require 'shoulda-matchers'
