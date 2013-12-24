@@ -75,6 +75,7 @@ root.root? # => true
 root.parent # => nil
 root.ancestors # => []
 root.descendants # => [child1, subchild1, subchild2]
+root.descendants.arrange # => {child1 => {subchild1 => {}, subchild2 => {}}}
 
 child1.parent # => root
 child1.ancestors # => [root]

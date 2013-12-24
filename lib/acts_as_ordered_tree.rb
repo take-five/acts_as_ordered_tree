@@ -1,8 +1,8 @@
-require "active_record"
-require "acts_as_ordered_tree/version"
-require "acts_as_ordered_tree/class_methods"
-require "acts_as_ordered_tree/instance_methods"
-require "acts_as_ordered_tree/validators"
+require 'active_record'
+require 'acts_as_ordered_tree/version'
+require 'acts_as_ordered_tree/class_methods'
+require 'acts_as_ordered_tree/instance_methods'
+require 'acts_as_ordered_tree/validators'
 
 module ActsAsOrderedTree
   PROTECTED_ATTRIBUTES_SUPPORTED = ActiveRecord::VERSION::STRING < '4.0.0' ||

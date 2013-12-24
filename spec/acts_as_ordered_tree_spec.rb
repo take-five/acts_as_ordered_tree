@@ -415,6 +415,73 @@ describe ActsAsOrderedTree, :transactional do
     end
   end
 
+  describe '#arrange' do
+    shared_examples 'arrangeable' do
+      let(:child_1) { root.children.first }
+      let(:child_2) { root.children.last }
+      let(:grandchild_11) { child_1.children.first }
+      let(:grandchild_12) { child_1.children.last }
+      let(:grandchild_21) { child_2.children.first }
+      let(:grandchild_22) { child_2.children.last }
+
+      specify '#descendants scope should be arrangeable' do
+        expect(root.descendants.arrange).to eq Hash[
+          child_1 => {
+            grandchild_11 => {},
+            grandchild_12 => {}
+          },
+          child_2 => {
+            grandchild_21 => {},
+            grandchild_22 => {}
+          }
+        ]
+      end
+
+      specify '#self_and_descendants should be arrangeable' do
+        expect(root.self_and_descendants.arrange).to eq Hash[
+          root => {
+            child_1 => {
+              grandchild_11 => {},
+              grandchild_12 => {}
+            },
+            child_2 => {
+              grandchild_21 => {},
+              grandchild_22 => {}
+            }
+          }
+        ]
+      end
+
+      specify '#ancestors should be arrangeable' do
+        expect(grandchild_11.ancestors.arrange).to eq Hash[
+          root => {
+            child_1 => {}
+          }
+        ]
+      end
+
+      specify '#self_and_ancestors should be arrangeable' do
+        expect(grandchild_11.self_and_ancestors.arrange).to eq Hash[
+          root => {
+            child_1 => {
+              grandchild_11 => {}
+            }
+          }
+        ]
+      end
+    end
+
+    context 'when persisted tree given' do
+      it_should_behave_like 'arrangeable' do
+        let(:root) { create :default }
+
+        before { create_list :default, 2, :parent => root }
+        before { create_list :default, 2, :parent => root.children.first }
+        before { create_list :default, 2, :parent => root.children.last }
+      end
+    end
+  end
+
   describe "move actions" do
     let!(:root) { create :default_with_counter_cache, :name => 'root' }
     let!(:child_1) { create :default_with_counter_cache, :parent => root, :name => 'child_1' }

@@ -1,3 +1,6 @@
+require 'acts_as_ordered_tree/arrangeable'
+require 'acts_as_ordered_tree/relation/preloaded'
+
 module ActsAsOrderedTree
   module Adapters
     module PostgreSQLAdapter
@@ -15,9 +18,10 @@ module ActsAsOrderedTree
           QUERY
 
           with_recursive_join(query, 'self_and_ancestors').
-              order('self_and_ancestors._depth DESC')
+              order('self_and_ancestors._depth DESC').
+              extending(Arrangeable)
         else
-          ancestors + [self]
+          (ancestors + [self]).tap { |ary| ary.extend(Arrangeable) }
         end
       end
 
@@ -33,7 +37,9 @@ module ActsAsOrderedTree
             INNER JOIN ancestors ON alias1.id = ancestors.#{parent_column}
         QUERY
 
-        with_recursive_join(query, 'ancestors').order('ancestors._depth DESC')
+        with_recursive_join(query, 'ancestors').
+            order('ancestors._depth DESC').
+            extending(Arrangeable)
       end
 
       def root
@@ -52,7 +58,8 @@ module ActsAsOrderedTree
         QUERY
 
         with_recursive_join(query, 'descendants').
-            order('descendants._positions ASC')
+            order('descendants._positions ASC').
+            extending(Arrangeable)
       end
 
       def descendants
