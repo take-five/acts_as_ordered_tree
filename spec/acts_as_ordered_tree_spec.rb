@@ -469,6 +469,30 @@ describe ActsAsOrderedTree, :transactional do
           }
         ]
       end
+
+      it 'should not discard orphaned nodes by default' do
+        relation = root.descendants.where(root.class.arel_table[:id].not_eq(child_1.id))
+
+        expect(relation.arrange).to eq Hash[
+          grandchild_11 => {},
+          grandchild_12 => {},
+          child_2 => {
+            grandchild_21 => {},
+            grandchild_22 => {}
+          }
+        ]
+      end
+
+      it 'should discard orphans if option :discard passed' do
+        relation = root.descendants.where(root.class.arel_table[:id].not_eq(child_1.id))
+
+        expect(relation.arrange(:orphans => :discard)).to eq Hash[
+          child_2 => {
+            grandchild_21 => {},
+            grandchild_22 => {}
+          }
+        ]
+      end
     end
 
     context 'when persisted tree given' do

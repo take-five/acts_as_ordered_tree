@@ -77,6 +77,8 @@ root.parent # => nil
 root.ancestors # => []
 root.descendants # => [child1, subchild1, subchild2]
 root.descendants.arrange # => {child1 => {subchild1 => {}, subchild2 => {}}}
+# you may pass an option to discard possible orphans from selection
+root.descendants.arrange(:orphans => :discard)
 
 child1.parent # => root
 child1.ancestors # => [root]
