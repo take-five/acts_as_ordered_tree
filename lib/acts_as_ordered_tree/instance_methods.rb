@@ -1,6 +1,7 @@
 # coding: utf-8
-require "acts_as_ordered_tree/tenacious_transaction"
-require "acts_as_ordered_tree/relation/preloaded"
+require 'acts_as_ordered_tree/tenacious_transaction'
+require 'acts_as_ordered_tree/relation/preloaded'
+require 'acts_as_ordered_tree/movement'
 
 module ActsAsOrderedTree
   module InstanceMethods
@@ -174,19 +175,19 @@ module ActsAsOrderedTree
 
     # Move the node to the left of another node
     def move_to_left_of(node)
-      move_to node, :left
+      MovementToLeftOfTarget.new(self, node).move
     end
     alias move_to_above_of move_to_left_of
 
     # Move the node to the left of another node
     def move_to_right_of(node)
-      move_to node, :right
+      MovementToRightOfTarget.new(self, node).move
     end
     alias move_to_bottom_of move_to_right_of
 
     # Move the node to the child of another node
     def move_to_child_of(node)
-      move_to node, :child
+      MovementToChildOfTarget.new(self, node).move
     end
 
     # Move the node to the child of another node with specify index
@@ -211,12 +212,7 @@ module ActsAsOrderedTree
 
     # Move the node to root nodes
     def move_to_root
-      move_to nil, :root
-    end
-
-    # Returns +true+ it is possible to move node to left/right/child of +target+
-    def move_possible?(target)
-      same_scope?(target) && !is_or_is_ancestor_of?(target)
+      MovementToRoot.new(self).move
     end
 
     # Check if other model is in the same scope
@@ -226,186 +222,23 @@ module ActsAsOrderedTree
       end
     end
 
-    private
+    def ordered_tree_scope #:nodoc:
+      if scope_column_names.empty?
+        self.class.base_class
+      else
+        self.class.base_class.where Hash[scope_column_names.map { |column| [column, self[column]] }]
+      end
+    end
 
+    private
     def compute_level #:nodoc:
       ancestors.count
-    end
-
-    def compute_ordered_tree_columns(target, pos) #:nodoc:
-      position_was = send("#{position_column}_was")
-
-      case pos
-        when :root  then
-          parent_id = nil
-          position = if root? && self[position_column]
-            # already root node
-            self[position_column]
-          else
-            ordered_tree_scope.roots.maximum(position_column).try(:succ) || 1
-          end
-          depth = 0
-        when :left  then
-          parent_id = target[parent_column]
-          position = target[position_column]
-          position -= 1 if position_was && target[parent_column] == send("#{parent_column}_was") && target[position_column] > position_was # right
-          depth = target.level
-        when :right then
-          parent_id = target[parent_column]
-          position = target[position_column]
-          position += 1 if target[parent_column] != send("#{parent_column}_was") || position_was.blank? || target[position_column] < position_was # left
-          depth = target.level
-        when :child then
-          parent_id = target.id
-          position = if self[parent_column] == parent_id && self[position_column]
-            # already child of target node
-            self[position_column]
-          else
-            # lock should be obtained on target
-            target.children.maximum(position_column).try(:succ) || 1
-          end
-          depth = target.level + 1
-        else raise ActiveRecord::ActiveRecordError, "Position should be :child, :left, :right or :root ('#{pos}' received)."
-      end
-      return parent_id, position, depth
-    end
-
-    # This method do real node movements
-    def move_to(target, pos) #:nodoc:
-      tenacious_transaction do
-        if pos != :root && target
-          # load object if node is not an object
-          target = self.class.lock(true).find(target)
-        elsif pos == :root
-          # Obtain lock on all root nodes
-          ordered_tree_scope.
-              roots.
-              lock(true).
-              reload
-        end
-
-        unless pos == :root || target && move_possible?(target)
-          raise ActiveRecord::ActiveRecordError, "Impossible move"
-        end
-
-        position_was = send("#{position_column}_was")
-        parent_id_was = send("#{parent_column}_was")
-        parent_id, position, depth = compute_ordered_tree_columns(target, pos)
-
-        # nothing changed - quit
-        return if parent_id == parent_id_was && position == position_was
-
-        self.class.lock(true).find(self)
-        self[position_column], self[parent_column] = position, parent_id
-
-        move_kind = case
-          when id_was && parent_id != parent_id_was then :move
-          when id_was && position  != position_was  then :reorder
-          else nil
-        end
-
-        update = proc do
-          if move_kind == :move
-            move!(id, parent_id_was, parent_id, position_was, position, depth)
-          else
-            reorder!(parent_id, position_was, position)
-          end
-
-          reload
-        end
-
-        if move_kind
-          run_callbacks move_kind, &update
-        else
-          update.call
-        end
-
-      end
     end
 
     def decrement_lower_positions(parent_id, position) #:nodoc:
       conditions = arel[parent_column].eq(parent_id).and(arel[position_column].gt(position))
 
       ordered_tree_scope.where(conditions).update_all("#{position_column} = #{position_column} - 1")
-    end
-
-    # Internal
-    def move!(id, parent_id_was, parent_id, position_was, position, depth) #:nodoc:
-      pk = self.class.primary_key
-
-      assignments = [
-          "#{parent_column} = CASE " +
-              "WHEN #{pk} = :id " +
-              "THEN :parent_id " +
-              "ELSE #{parent_column} " +
-          "END",
-          "#{position_column} = CASE " +
-              # set new position
-              "WHEN #{pk} = :id " +
-              "THEN :position " +
-              # decrement lower positions within old parent
-              "WHEN #{parent_column} #{parent_id_was.nil? ? " IS NULL" : " = :parent_id_was"} AND #{position_column} > :position_was " +
-              "THEN #{position_column} - 1 " +
-              # increment lower positions within new parent
-              "WHEN #{parent_column} #{parent_id.nil? ? "IS NULL" : " = :parent_id"} AND #{position_column} >= :position " +
-              "THEN #{position_column} + 1 " +
-              "ELSE #{position_column} " +
-          "END",
-          ("#{depth_column} = CASE " +
-              "WHEN #{pk} = :id " +
-              "THEN :depth " +
-              "ELSE #{depth_column} " +
-          "END" if depth_column)
-      ]
-
-      conditions = arel[pk].eq(id).or(
-        arel[parent_column].eq(parent_id_was)
-      ).or(
-        arel[parent_column].eq(parent_id)
-      )
-
-      binds = {:id => id,
-               :parent_id_was => parent_id_was,
-               :parent_id => parent_id,
-               :position_was => position_was,
-               :position => position,
-               :depth => depth}
-
-      ordered_tree_scope.where(conditions).update_all([assignments.compact.join(', '), binds])
-    end
-
-    # Internal
-    def reorder!(parent_id, position_was, position)
-      assignments = [
-        if position_was
-          <<-SQL
-          #{position_column} = CASE
-              WHEN #{position_column} = :position_was
-              THEN :position
-              WHEN #{position_column} <= :position AND #{position_column} > :position_was AND :position > :position_was
-              THEN #{position_column} - 1
-              WHEN #{position_column} >= :position AND #{position_column} < :position_was AND :position < :position_was
-              THEN #{position_column} + 1
-              ELSE #{position_column}
-          END
-          SQL
-        else
-          <<-SQL
-          #{position_column} = CASE
-              WHEN #{position_column} > :position
-              THEN #{position_column} + 1
-              WHEN #{position_column} IS NULL
-              THEN :position
-              ELSE #{position_column}
-          END
-          SQL
-        end
-      ]
-
-      conditions = arel[parent_column].eq(parent_id)
-      binds = {:id => id, :position_was => position_was, :position => position}
-
-      ordered_tree_scope.where(conditions).update_all([assignments.compact.join(', '), binds])
     end
 
     # recursively load descendants
@@ -455,14 +288,6 @@ module ActsAsOrderedTree
 
     def arel #:nodoc:
       self.class.arel_table
-    end
-
-    def ordered_tree_scope #:nodoc:
-      if scope_column_names.empty?
-        self.class.base_class
-      else
-        self.class.base_class.where Hash[scope_column_names.map { |column| [column, self[column]] }]
-      end
     end
   end # module InstanceMethods
 end # module ActsAsOrderedTree

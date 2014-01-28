@@ -9,7 +9,8 @@ require 'rspec-expectations'
 
 begin
   require 'simplecov'
-  SimpleCov.start
+  SimpleCov.command_name "#{File.basename(ENV['BUNDLE_GEMFILE'])}/#{ENV['DB']}"
+  SimpleCov.start 'test_frameworks'
 rescue LoadError
   #ignore
 end

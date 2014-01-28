@@ -17,7 +17,7 @@ module ActsAsOrderedTree
         raise unless retry_count < RETRY_COUNT
         retry_count += 1
 
-        logger.info "Deadlock detected on retry #{retry_count}, restarting transaction"
+        self.class.logger.info "Deadlock detected on retry #{retry_count}, restarting transaction"
 
         sleep(rand(retry_count)*0.1) # Aloha protocol
 

@@ -199,6 +199,12 @@ describe ActsAsOrderedTree, :transactional do
       subject { build :default, :parent => root }
       its(:level) { should eq 1 }
     end
+
+    context 'a model without depth column' do
+      let(:root) { create :scoped }
+      subject { create :scoped, :parent => root, :scope_type => root.scope_type }
+      its(:level) { should eq 1 }
+    end
   end
 
   describe "#self_and_ancestors" do
@@ -516,6 +522,10 @@ describe ActsAsOrderedTree, :transactional do
       example "move_root_to_left_of_child_2" do
         expect{ root.move_to_left_of child_2 }.to raise_exception ActiveRecord::ActiveRecordError
       end
+
+      example "move_1_to_left_of_2_id" do
+        expect { child_1.move_to_left_of(child_2) }.not_to change{child_1}
+      end
     end
 
     describe "#move_to_right_of" do
@@ -541,6 +551,10 @@ describe ActsAsOrderedTree, :transactional do
 
       example "move_root_to_right_of_child_2" do
         expect{ root.move_to_right_of child_2 }.to raise_exception ActiveRecord::ActiveRecordError
+      end
+
+      example "move_2_to_right_of_1" do
+        expect { child_2.move_to_right_of(child_1) }.not_to change{child_2}
       end
     end
 

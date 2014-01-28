@@ -40,6 +40,7 @@ module ActsAsOrderedTree
           before_create :set_depth!
           before_save   :set_depth!, :if => "#{parent_column}_changed?".to_sym
           around_move   :update_descendants_depth
+          around_update :update_descendants_depth
         end
 
         if children_counter_cache_column

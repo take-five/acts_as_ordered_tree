@@ -60,10 +60,6 @@ module ActsAsOrderedTree
       end
 
       private
-      def recursive_scope
-        ActsAsOrderedTree::Relation::Recursive.new(ordered_tree_scope)
-      end
-
       def with_recursive_join(recursive_query_sql, aliaz)
         join_sql = 'INNER JOIN (' +
             "WITH RECURSIVE #{aliaz} AS (" +
