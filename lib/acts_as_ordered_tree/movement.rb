@@ -171,6 +171,8 @@ module ActsAsOrderedTree
   # @abstract
   class MovementToTarget < Movement
     def initialize(node, target)
+      raise Error, "target node can't be nil" unless target
+
       super(node)
       @_target = target
     end
@@ -189,7 +191,7 @@ module ActsAsOrderedTree
   # @abstract
   class MovementToSiblingOfTarget < MovementToTarget
     def parent_id
-      target[parent_column]
+      target_parent_id
     end
 
     def depth
@@ -249,6 +251,47 @@ module ActsAsOrderedTree
 
     def highest_child_position
       target.children.maximum(position_column) || 0
+    end
+  end
+
+  # @api private
+  class MovementToChildWithIndex
+    attr_reader :node, :target, :index
+
+    def initialize(node, target, index)
+      raise Movement::Error, "Movement index can't be empty" unless index
+
+      @node, @target, @index = node, target, index
+    end
+
+    def move
+      node.tenacious_transaction do
+        movement.move
+      end
+    end
+
+    private
+    def siblings
+      (target.try(:children) || node.ordered_tree_scope.roots).
+          lock(true).
+          reload.
+          reject { |sibling| sibling == node }
+    end
+
+    def movement
+      new_siblings = siblings
+
+      if new_siblings.empty?
+        target ?
+            MovementToChildOfTarget.new(node, target) :
+            MovementToRoot.new(node)
+      elsif new_siblings.count <= index
+        MovementToRightOfTarget.new(node, new_siblings.last)
+      else
+        index >= 0 ?
+          MovementToLeftOfTarget.new(node, new_siblings[index]) :
+          MovementToRightOfTarget.new(node, new_siblings[index])
+      end
     end
   end
 end

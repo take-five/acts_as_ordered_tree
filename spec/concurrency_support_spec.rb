@@ -1,8 +1,7 @@
-require "spec_helper"
+require 'spec_helper'
 
-# FIXME: These tests are buggy on Rails 3.0
 # Sqlite is not concurrent database
-if ActiveRecord::VERSION::STRING >= "3.1" && ENV['DB'] != 'sqlite3'
+if ENV['DB'] != 'sqlite3'
   describe ActsAsOrderedTree, :non_transactional do
     module Concurrency
       # run block in its own thread, create +size+ threads
@@ -18,7 +17,15 @@ if ActiveRecord::VERSION::STRING >= "3.1" && ENV['DB'] != 'sqlite3'
 
     let!(:root) { create :default }
 
-    it "should not create nodes with same position" do
+    # prints tree
+    def ptree(node = nil)
+      node ||= Default.root
+
+      puts ('  ' * node.level) + node.name
+      node.children.each { |c| ptree(c) }
+    end
+
+    it 'should not create nodes with same position' do
       pool(3) do
         create :default, :parent => root
       end
@@ -26,7 +33,7 @@ if ActiveRecord::VERSION::STRING >= "3.1" && ENV['DB'] != 'sqlite3'
       root.children.map(&:position).should eq [1, 2, 3]
     end
 
-    it "should not move nodes to same position when moving to child of certain node" do
+    it 'should not move nodes to same position when moving to child of certain node' do
       nodes = create_list :default, 3
 
       pool(3) do |x|
@@ -36,7 +43,7 @@ if ActiveRecord::VERSION::STRING >= "3.1" && ENV['DB'] != 'sqlite3'
       root.children.map(&:position).should eq [1, 2, 3]
     end
 
-    it "should not move nodes to same position when moving to left of root node" do
+    it 'should not move nodes to same position when moving to left of root node' do
       nodes = create_list :default, 3, :parent => root
 
       pool(3) do |x|
@@ -46,7 +53,7 @@ if ActiveRecord::VERSION::STRING >= "3.1" && ENV['DB'] != 'sqlite3'
       Default.roots.map(&:position).should eq [1, 2, 3, 4]
     end
 
-    it "should not move nodes to same position when moving to left of child node" do
+    it 'should not move nodes to same position when moving to left of child node' do
       child = create :default, :parent => root
       nodes = create_list :default, 3, :parent => child
 
@@ -58,7 +65,7 @@ if ActiveRecord::VERSION::STRING >= "3.1" && ENV['DB'] != 'sqlite3'
       root.children.last.should eq child
     end
 
-    it "should not move nodes to same position when moving to right of child node" do
+    it 'should not move nodes to same position when moving to right of child node' do
       child = create :default, :parent => root
       nodes = create_list :default, 3, :parent => child
 
@@ -70,7 +77,7 @@ if ActiveRecord::VERSION::STRING >= "3.1" && ENV['DB'] != 'sqlite3'
       root.children.first.should eq child
     end
 
-    it "should not move nodes to same position when moving to root" do
+    it 'should not move nodes to same position when moving to root' do
       nodes = create_list :default, 3, :parent => root
 
       pool(3) do |x|
@@ -81,7 +88,7 @@ if ActiveRecord::VERSION::STRING >= "3.1" && ENV['DB'] != 'sqlite3'
     end
 
     # checking deadlock also
-    it "should not move nodes to same position when moving to specified index" do
+    it 'should not move nodes to same position when moving to specified index' do
       # root
       # * child1
       #   * nodes1_1
@@ -115,7 +122,7 @@ if ActiveRecord::VERSION::STRING >= "3.1" && ENV['DB'] != 'sqlite3'
       child2.children.reload.should == [nodes2_1, nodes1_1]
     end
 
-    it "should not move nodes to same position when moving higher" do
+    it 'should not move nodes to same position when moving higher' do
       child1, child2, child3 = create_list :default, 3, :parent => root
 
       thread1 = Thread.new do
@@ -134,7 +141,7 @@ if ActiveRecord::VERSION::STRING >= "3.1" && ENV['DB'] != 'sqlite3'
       root.children.map(&:position).should eq [1, 2, 3]
     end
 
-    it "should not move nodes to same position when moving lower" do
+    it 'should not move nodes to same position when moving lower' do
       child1, child2, child3 = create_list :default, 3, :parent => root
 
       thread1 = Thread.new do

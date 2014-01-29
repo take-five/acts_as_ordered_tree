@@ -192,22 +192,7 @@ module ActsAsOrderedTree
 
     # Move the node to the child of another node with specify index
     def move_to_child_with_index(node, index)
-      raise ActiveRecord::ActiveRecordError, "index can't be nil" unless index
-
-      tenacious_transaction do
-        new_siblings = (node.try(:children) || ordered_tree_scope.roots).
-            reload.
-            lock(true).
-            reject { |root_node| root_node == self }
-
-        if new_siblings.empty?
-          node ? move_to_child_of(node) : move_to_root
-        elsif new_siblings.count <= index
-          move_to_right_of(new_siblings.last)
-        elsif
-          index >= 0 ? move_to_left_of(new_siblings[index]) : move_to_right_of(new_siblings[index])
-        end
-      end
+      MovementToChildWithIndex.new(self, node, index).move
     end
 
     # Move the node to root nodes

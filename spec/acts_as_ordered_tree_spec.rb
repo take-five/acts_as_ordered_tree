@@ -712,13 +712,11 @@ describe ActsAsOrderedTree, :transactional do
         let!(:node2) { create :scoped, :scope_type => 's2', :parent => root2 }
 
         example "move_node1_to_root" do
-          node1.should_receive(:move_to_right_of).with(root1)
-          node1.move_to_child_with_index nil, 100
+          expect{node1.move_to_child_with_index nil, 100}.to change{node1.left_sibling}.from(nil).to(root1)
         end
 
         example "move_node2_to_root" do
-          node2.should_receive(:move_to_right_of).with(root2)
-          node2.move_to_child_with_index nil, 100
+          expect{node2.move_to_child_with_index nil, 100}.to change{node2.left_sibling}.from(nil).to(root2)
         end
       end
 
