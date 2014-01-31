@@ -15,7 +15,8 @@ gemfile:
   - gemfiles/rails3.1.gemfile
   - gemfiles/rails3.2.gemfile
   - gemfiles/rails4.0.gemfile
-script: "bundle exec rake spec"
+  - gemfiles/rails4.1.gemfile
+script: "bundle exec rake test"
 notifications:
   recipients:
     - amikhailov83@gmail.com

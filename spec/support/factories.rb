@@ -1,5 +1,5 @@
 FactoryGirl.define do
-  factory :default do
+  factory :default, :aliases => [:node] do
     sequence(:name) { |n| "category #{n}" }
   end
 

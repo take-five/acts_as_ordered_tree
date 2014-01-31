@@ -156,6 +156,7 @@ module ActsAsOrderedTree
     def obtain_locks
       super
 
+      # @todo it doesn't work when two nodes created simultaneously and tree is empty, so there is nothing to lock
       ordered_tree_scope.
         roots.
         lock(true).
