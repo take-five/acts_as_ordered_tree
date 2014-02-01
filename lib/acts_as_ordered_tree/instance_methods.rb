@@ -2,6 +2,7 @@
 require 'acts_as_ordered_tree/tenacious_transaction'
 require 'acts_as_ordered_tree/relation/preloaded'
 require 'acts_as_ordered_tree/movement'
+require 'acts_as_ordered_tree/arrangeable'
 
 module ActsAsOrderedTree
   module InstanceMethods
@@ -51,7 +52,8 @@ module ActsAsOrderedTree
 
       # 3. create fake scope
       ActsAsOrderedTree::Relation::Preloaded.new(self.class).
-          where(:id => nodes.map(&:id)).
+          where(:id => nodes.map(&:id).compact).
+          extending(Arrangeable).
           records(nodes)
     end
 
@@ -94,7 +96,8 @@ module ActsAsOrderedTree
       records = fetch_self_and_descendants - [self]
 
       ActsAsOrderedTree::Relation::Preloaded.new(self.class).
-          where(:id => records.map(&:id)).
+          where(:id => records.map(&:id).compact).
+          extending(Arrangeable).
           records(records)
     end
 
@@ -104,6 +107,7 @@ module ActsAsOrderedTree
 
       ActsAsOrderedTree::Relation::Preloaded.new(self.class).
           where(:id => records.map(&:id)).
+          extending(Arrangeable).
           records(records)
     end
 

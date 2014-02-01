@@ -21,7 +21,7 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'rake', '>= 0.9.2'
   s.add_development_dependency 'bundler', '>= 1.0'
   s.add_development_dependency 'rspec', '>= 2.11'
-  s.add_development_dependency 'shoulda-matchers', '>= 1.2.0'
+  s.add_development_dependency 'shoulda-matchers', '>= 2.4.0'
   s.add_development_dependency 'cucumber'
   s.add_development_dependency 'factory_girl', '< 3'
   s.add_development_dependency 'appraisal', '>= 0.4.0'
