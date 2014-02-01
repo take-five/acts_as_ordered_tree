@@ -1,10 +1,15 @@
 @concurrent
 Feature: update tree concurrently
   @wip
-  Scenario: create root nodes simultaneously
+  Scenario: create root nodes in empty tree simultaneously
     When I create 3 root nodes simultaneously
     # FIXME: fails now because of #24
     Then root nodes sorted by "position" should have "position" attribute equal to "[1, 2, 3]"
+
+  Scenario: add root nodes to existing tree simultaneously
+    Given the node "root" exists
+    When I create 3 root nodes simultaneously
+    Then root nodes sorted by "position" should have "position" attribute equal to "[1, 2, 3, 4]"
 
   Scenario: create nodes on the same level simultaneously
     Given the node "root" exists

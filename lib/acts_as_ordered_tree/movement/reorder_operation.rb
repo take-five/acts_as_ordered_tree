@@ -30,7 +30,7 @@ module ActsAsOrderedTree
       else
         <<-SQL
           #{position_column} = CASE
-            WHEN #{position_column} > :position
+            WHEN #{position_column} >= :position
             THEN #{position_column} + 1
             WHEN #{position_column} IS NULL
             THEN :position
