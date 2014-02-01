@@ -57,10 +57,11 @@ end
 
 When /^I want to swap nodes "(.*?)" and "(.*?)" to indices (\d+) and (\d+) simultaneously$/ do |arg1, arg2, i1, i2|
   node1, node2  = find_node(arg1), find_node(arg2)
+  parent1, parent2 = node1.parent, node2.parent
 
   pending = Array[
-    -> { node1.move_to_child_with_index(node2.parent, i1.to_i) },
-    -> { node2.move_to_child_with_index(node1.parent, i2.to_i) }
+    -> { node1.move_to_child_with_index(parent2, i1.to_i) },
+    -> { node2.move_to_child_with_index(parent1, i2.to_i) }
   ]
 
   concurrently(2) { |i| pending[i].call }

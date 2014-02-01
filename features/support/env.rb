@@ -30,8 +30,3 @@ Before('@concurrent') do
     connection.execute "DELETE FROM #{connection.quote_table_name table}"
   end
 end
-
-# turn off concurrent features for sqlite
-Around('@concurrent') do |*, block|
-  block.call unless ENV['DB'] == 'sqlite3'
-end

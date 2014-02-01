@@ -1,6 +1,11 @@
 module ActsAsOrderedTree
   module TenaciousTransaction
-    DEADLOCK_MESSAGES = /Deadlock found when trying to get lock|Lock wait timeout exceeded|deadlock detected/.freeze
+    DEADLOCK_MESSAGES = Regexp.new [
+      'Deadlock found when trying to get lock',
+      'Lock wait timeout exceeded',
+      'deadlock detected',
+      'database is locked'
+    ].join(?|).freeze
     RETRY_COUNT = 10
 
     # Partially borrowed from awesome_nested_set
