@@ -22,6 +22,9 @@ module ActsAsOrderedTree
              :transaction,
              :to => :node
 
+    delegate :primary_key,
+             :to => 'node.class'
+
     def initialize(node)
       @node = node
     end
@@ -141,10 +144,10 @@ module ActsAsOrderedTree
     end
 
     def position
-      if node.root? && positioned?
+      @position ||= if node.root? && positioned?
         current_position
       else
-        highest_root_position + 1
+        (highest_root_position + 1)
       end
     end
 
@@ -157,14 +160,17 @@ module ActsAsOrderedTree
       super
 
       # @todo it doesn't work when two nodes created simultaneously and tree is empty, so there is nothing to lock
-      ordered_tree_scope.
-        roots.
-        lock(true).
-        reload
+      roots.lock(true).reload
     end
 
     def highest_root_position
-      ordered_tree_scope.roots.maximum(position_column) || 0
+      roots.maximum(position_column) || 0
+    end
+
+    def roots
+      table = node.class.arel_table
+
+      ordered_tree_scope.roots.where(table[primary_key].not_eq(node.id))
     end
   end
 
@@ -238,7 +244,7 @@ module ActsAsOrderedTree
     end
 
     def position
-      if already_child_of_target? && positioned?
+      @position ||= if already_child_of_target? && positioned?
         current_position
       else
         highest_child_position + 1
