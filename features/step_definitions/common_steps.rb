@@ -20,18 +20,28 @@ module RecordHelper
 end
 World(RecordHelper)
 
+
+
 Then /^I should have following tree:?$/ do |definition|
-  current_tree = tested_class.roots.map do |root|
-    root.self_and_descendants.map do |node|
-      tnode = TreeParserHelper::TreeNode.new(node.name, node.parent.try(:name))
-      tnode.attributes[:level] = node.level
-      tnode.attributes[:position] = node[node.position_column]
-      tnode
-    end
-  end.reduce(:+)
+  definition.should match_actual_tree
+end
 
-  expected_tree = []
-  parse_tree_definition(definition) { |node| expected_tree << node }
+When /^I change "([^"]+)" parent to "([^"]+)"$/ do |arg1, arg2|
+  @record = find_node(arg1)
+  parent = arg2.presence && find_node(arg2)
 
-  expected_tree.should eq current_tree
+  @record.parent = parent
+end
+
+When /^I change "([^"]+)" to be root$/ do |arg1|
+  @record = find_node(arg1)
+  @record.parent = nil
+end
+
+When /^I save record$/ do
+  expect{@record.save!}.to_not raise_exception
+end
+
+Then /^"([^"]+)" should be root$/ do |arg1|
+  find_node(arg1).should be_root
 end

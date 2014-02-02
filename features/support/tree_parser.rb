@@ -69,6 +69,34 @@ module TreeParserHelper
     end
   end
 
+  def print_tree
+    puts inspect_tree
+  end
+
+  def inspect_tree(node = nil, buf = '')
+    if node
+      buf << ('  ' * node.level) + node.name + " / level = #{node.level} / position = #{node[node.position_column]}"
+
+      node.attributes.except(
+          node.class.primary_key,
+          'name',
+          node.depth_column.to_s,
+          node.position_column.to_s,
+          node.parent_column.to_s
+      ).each do |k, v|
+        buf << " / #{k} = #{v.inspect}"
+      end
+
+      buf << "\n"
+
+      node.children.each { |c| inspect_tree(c, buf) }
+    else
+      tested_class.roots.each { |root| inspect_tree(root, buf) }
+    end
+
+    buf
+  end
+
   private
   def create_tree_node_from_line(line, parent)
     line = line.chomp.gsub(/\A\s+/, '')
@@ -84,6 +112,34 @@ module TreeParserHelper
     end
 
     node
+  end
+end
+
+RSpec::Matchers.define :match_actual_tree do
+  match do |definition|
+    expected_tree(definition) == actual_tree
+  end
+
+  failure_message_for_should do |definition|
+    "expected that \n\n#{inspect_tree}\n\nwould match\n\n#{definition}\n\n"
+  end
+
+  def actual_tree
+    tested_class.roots.map do |root|
+      root.self_and_descendants.map do |node|
+        tnode = TreeParserHelper::TreeNode.new(node.name, node.parent.try(:name))
+        tnode.attributes[:level] = node.level
+        tnode.attributes[:position] = node[node.position_column]
+        tnode.attributes.merge!(node.attributes)
+        tnode
+      end
+    end.reduce(:+)
+  end
+
+  def expected_tree(definition)
+    expected_tree = []
+    parse_tree_definition(definition) { |node| expected_tree << node }
+    expected_tree
   end
 end
 

@@ -2,6 +2,8 @@
 
 require 'bundler/setup'
 require 'cucumber/rspec/doubles'
+require 'database_cleaner'
+#require 'database_cleaner/cucumber'
 
 ENV['DB'] ||= 'pg'
 
@@ -15,12 +17,14 @@ end
 
 require File.expand_path('../../spec/db/boot', File.dirname(__FILE__))
 
-Around('~@concurrent') do |*, block|
-  ActiveRecord::Base.transaction do
-    block.call
+DatabaseCleaner.strategy = :transaction
 
-    raise ActiveRecord::Rollback
-  end
+Around('~@concurrent') do |*, block|
+  DatabaseCleaner.start
+
+  block.call
+
+  DatabaseCleaner.clean
 end
 
 Before('@concurrent') do
