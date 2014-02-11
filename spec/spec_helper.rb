@@ -6,12 +6,14 @@ require 'bundler/setup'
 require 'rspec'
 require 'rspec-expectations'
 
-begin
-  require 'simplecov'
-  SimpleCov.command_name "rspec/#{File.basename(ENV['BUNDLE_GEMFILE'])}/#{ENV['DB']}"
-  SimpleCov.start 'test_frameworks'
-rescue LoadError
-  #ignore
+unless ENV['NOCOV']
+  begin
+    require 'simplecov'
+    SimpleCov.command_name "rspec/#{File.basename(ENV['BUNDLE_GEMFILE'])}/#{ENV['DB']}"
+    SimpleCov.start 'test_frameworks'
+  rescue LoadError
+    #ignore
+  end
 end
 
 require 'db/boot'

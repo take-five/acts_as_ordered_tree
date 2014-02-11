@@ -6,12 +6,14 @@ require 'database_cleaner'
 
 ENV['DB'] ||= 'pg'
 
-begin
-  require 'simplecov'
-  SimpleCov.command_name "cucumber/#{File.basename(ENV['BUNDLE_GEMFILE'])}/#{ENV['DB']}"
-  SimpleCov.start 'test_frameworks'
-rescue LoadError
-  #ignore
+unless ENV['NOCOV']
+  begin
+    require 'simplecov'
+    SimpleCov.command_name "cucumber/#{File.basename(ENV['BUNDLE_GEMFILE'])}/#{ENV['DB']}"
+    SimpleCov.start 'test_frameworks'
+  rescue LoadError
+    #ignore
+  end
 end
 
 require File.expand_path('../../spec/db/boot', File.dirname(__FILE__))
