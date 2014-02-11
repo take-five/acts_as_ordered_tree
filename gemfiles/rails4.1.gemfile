@@ -10,5 +10,6 @@ gem "activerecord", "~> 4.1.0.beta1"
 gem "activerecord-jdbc-adapter", :github=>"jruby/activerecord-jdbc-adapter", :platform=>:jruby
 gem "activerecord-jdbcpostgresql-adapter", :github=>"jruby/activerecord-jdbc-adapter", :platform=>:jruby
 gem "activerecord-jdbcsqlite3-adapter", :github=>"jruby/activerecord-jdbc-adapter", :platform=>:jruby
+gem "activerecord-jdbcmysql-adapter", :github=>"jruby/activerecord-jdbc-adapter", :platform=>:jruby
 
 gemspec :path=>"../"

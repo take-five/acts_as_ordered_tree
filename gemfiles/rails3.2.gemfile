@@ -9,5 +9,6 @@ gem "simplecov", :platform=>:ruby
 gem "activerecord", "~> 3.2.0"
 gem "activerecord-jdbcpostgresql-adapter", "~> 1.2.2", :platform=>:jruby
 gem "activerecord-jdbcsqlite3-adapter", "~> 1.2.2", :platform=>:jruby
+gem "activerecord-jdbcmysql-adapter", "~> 1.2.2", :platform=>:jruby
 
 gemspec :path=>"../"

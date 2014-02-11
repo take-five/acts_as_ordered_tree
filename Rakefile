@@ -21,7 +21,6 @@ namespace :db do
     end
   end
 
-  desc 'Run given task for all databases'
   task :all do
     require 'benchmark'
 
@@ -29,7 +28,7 @@ namespace :db do
       databases.keys.each do |name|
         with_database(name) do
           announce
-          #run
+          run
         end
       end
     end
@@ -42,11 +41,11 @@ namespace :db do
 
   private
   def exec
-    Kernel.exec(command)
+    Kernel.exec(ENV, *command)
   end
 
   def run
-    unless Kernel.system(command)
+    unless Kernel.system(ENV, *command)
       exit(1)
     end
   end
@@ -60,20 +59,22 @@ namespace :db do
   end
 
   def command
-    "DB=#{ENV['DB']} bundle exec rake " + ARGV.slice(1, ARGV.size).join(' ')
+    ['bundle', 'exec', 'rake', *ARGV.slice(1, ARGV.size)]
   end
 
   def announce
-    puts ">> #{command}"
+    puts ">> #{command.join(' ')}"
   end
 end
 
 desc 'Run given task for all databases'
 task :db => 'db:all'
 
-RSpec::Core::RakeTask.new(:spec)
+RSpec::Core::RakeTask.new(:spec) do |t|
+  t.rspec_opts = '--color --format progress'
+end
 Cucumber::Rake::Task.new(:features) do |t|
-  t.cucumber_opts = 'features --format progress --tags ~@wip'
+  t.cucumber_opts = 'features --color --format progress --tags ~@wip'
 end
 
 desc 'Run all test suits'
