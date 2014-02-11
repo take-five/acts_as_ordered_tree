@@ -3,7 +3,6 @@
 require 'bundler/setup'
 require 'cucumber/rspec/doubles'
 require 'database_cleaner'
-#require 'database_cleaner/cucumber'
 
 ENV['DB'] ||= 'pg'
 
@@ -17,9 +16,9 @@ end
 
 require File.expand_path('../../spec/db/boot', File.dirname(__FILE__))
 
-DatabaseCleaner.strategy = :transaction
+DatabaseCleaner.strategy = :truncation
 
-Around('~@concurrent') do |*, block|
+Around do |*, block|
   DatabaseCleaner.start
 
   block.call
@@ -27,10 +26,13 @@ Around('~@concurrent') do |*, block|
   DatabaseCleaner.clean
 end
 
-Before('@concurrent') do
-  connection = ActiveRecord::Base.connection
-
-  connection.tables.each do |table|
-    connection.execute "DELETE FROM #{connection.quote_table_name table}"
-  end
+# SQLite3 is not concurrent database really.
+# It can cause really weird issues in concurrent environments.
+#
+#   SQLite3::BusyException: database is locked
+#
+# This exception occurs anywhere, in such random places I couldn't even think about.
+# I give up, I can't fight with it anymore.
+Around('@concurrent') do |*, block|
+  block.call unless ENV['DB'] == 'sqlite3'
 end

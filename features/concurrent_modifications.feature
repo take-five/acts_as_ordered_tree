@@ -1,19 +1,33 @@
 @concurrent
 Feature: update tree concurrently
+  # FIXME: fails now because of #24
   @wip
   Scenario: create root nodes in empty tree simultaneously
-    When I create 3 root nodes simultaneously
-    # FIXME: fails now because of #24
-    Then root nodes sorted by "position" should have "position" attribute equal to "[1, 2, 3]"
+    When I want to create root node 3 times
+    And I perform these actions simultaneously
+    Then I should have following tree:
+    """
+    * / position = 1
+    * / position = 2
+    * / position = 3
+    """
 
   Scenario: add root nodes to existing tree simultaneously
-    Given the node "root" exists
-    When I create 3 root nodes simultaneously
-    Then root nodes sorted by "position" should have "position" attribute equal to "[1, 2, 3, 4]"
+    Given I create root node "root"
+    When I want to create root node 3 times
+    And I perform these actions simultaneously
+    Then I should have following tree:
+    """
+    root
+    * / position = 2
+    * / position = 3
+    * / position = 4
+    """
 
   Scenario: create nodes on the same level simultaneously
-    Given the node "root" exists
-    When I create 3 children of "root" simultaneously
+    Given I create root node "root"
+    When I want to create node under "root" 3 times
+    And I perform these actions simultaneously
     Then I should have following tree:
     """
     root
@@ -30,7 +44,10 @@ Feature: update tree concurrently
     node 2
     node 3
     """
-    When I move nodes "node 1, node 2, node 3" under "root" simultaneously
+    When I want to move node "node 1" under "root"
+    And I want to move node "node 2" under "root"
+    And I want to move node "node 3" under "root"
+    And I perform these actions simultaneously
     Then I should have following tree:
     """
     root
@@ -48,7 +65,10 @@ Feature: update tree concurrently
       node 3
     """
 
-    When I move nodes "node 1, node 2, node 3" to left of "root" simultaneously
+    When I want to move node "node 1" to left of "root"
+    And I want to move node "node 2" to left of "root"
+    And I want to move node "node 3" to left of "root"
+    And I perform these actions simultaneously
     Then I should have following tree:
     """
     * / position = 1
@@ -67,7 +87,10 @@ Feature: update tree concurrently
         node 3
     """
 
-    When I move nodes "node 1, node 2, node 3" to left of "child" simultaneously
+    When I want to move node "node 1" to left of "child"
+    And I want to move node "node 2" to left of "child"
+    And I want to move node "node 3" to left of "child"
+    And I perform these actions simultaneously
     Then I should have following tree:
     """
     root
@@ -86,7 +109,10 @@ Feature: update tree concurrently
       node 3
     """
 
-    When I move nodes "node 1, node 2, node 3" to right of "root" simultaneously
+    When I want to move node "node 1" to right of "root"
+    And I want to move node "node 2" to right of "root"
+    And I want to move node "node 3" to right of "root"
+    And I perform these actions simultaneously
     Then I should have following tree:
     """
     root / position = 1
@@ -105,7 +131,10 @@ Feature: update tree concurrently
         node 3
     """
 
-    When I move nodes "node 1, node 2, node 3" to right of "child" simultaneously
+    When I want to move node "node 1" to right of "child"
+    And I want to move node "node 2" to right of "child"
+    And I want to move node "node 3" to right of "child"
+    And I perform these actions simultaneously
     Then I should have following tree:
     """
     root
@@ -123,7 +152,10 @@ Feature: update tree concurrently
       node 2
       node 3
     """
-    When I move nodes "node 1, node 2, node 3" to root simultaneously
+    When I want to move node "node 1" to root
+    And I want to move node "node 2" to root
+    And I want to move node "node 3" to root
+    And I perform these actions simultaneously
     Then I should have following tree:
     """
     root / position = 1
@@ -141,7 +173,9 @@ Feature: update tree concurrently
       child 3
       child 4
     """
-    When I move nodes "child 2, child 3" <position> simultaneously
+    When I want to move node "child 2" <position>
+    And I want to move node "child 3" <position>
+    And I perform these actions simultaneously
     Then I should have following tree:
     """
     root
@@ -167,7 +201,9 @@ Feature: update tree concurrently
         *
         swap 2
     """
-    When I want to swap nodes "swap 1" and "swap 2" to indices 2 and 0 simultaneously
+    When I want to move node "swap 1" under "child 2" to position 2
+    When I want to move node "swap 2" under "child 1" to position 1
+    And I perform these actions simultaneously
     Then I should have following tree:
     """
     root

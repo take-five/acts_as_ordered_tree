@@ -74,7 +74,7 @@ module ActsAsOrderedTree
             ") SELECT * FROM #{aliaz} " +
             ") #{aliaz} ON #{aliaz}.id = #{self.class.quoted_table_name}.id"
 
-        ordered_tree_scope.joins(join_sql)
+        ordered_tree_node.scope.joins(join_sql)
       end
 
       # Rails 3.0 does not support update_all with joins, so we patch it :(

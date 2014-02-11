@@ -5,11 +5,11 @@ require 'acts_as_ordered_tree/instance_methods'
 require 'acts_as_ordered_tree/validators'
 
 module ActsAsOrderedTree
-  PROTECTED_ATTRIBUTES_SUPPORTED = ActiveRecord::VERSION::STRING < '4.0.0' ||
+  PROTECTED_ATTRIBUTES_SUPPORTED = ActiveRecord::VERSION::MAJOR < 4 ||
     defined?(ProtectedAttributes)
 
   # can we use has_many :children, :order => :position
-  PLAIN_ORDER_OPTION_SUPPORTED = ActiveRecord::VERSION::STRING < '4.0.0'
+  PLAIN_ORDER_OPTION_SUPPORTED = ActiveRecord::VERSION::MAJOR < 4
 
   # == Usage
   #   class Category < ActiveRecord::Base
@@ -41,8 +41,8 @@ module ActsAsOrderedTree
       :dependent     => :destroy
     }
 
-    [:before_add, :after_add, :before_remove, :after_remove].each do |callback|
-      has_many_children_options[callback] = options[callback] if options.key?(callback)
+    [:before_add, :after_add, :before_remove, :after_remove].each do |key|
+      has_many_children_options[key] = options[key] if options.key?(key)
     end
 
     if PLAIN_ORDER_OPTION_SUPPORTED
@@ -73,10 +73,13 @@ module ActsAsOrderedTree
     end
 
     # create parent association
+    #
+    # we cannot use native :counter_cache callbacks because they suck! :(
+    # they act like this:
+    #   node.parent = new_parent # and here counters are updated, outside of transaction!
     belongs_to :parent,
                :class_name => "::#{base_class.name}",
                :foreign_key => options[:parent_column],
-               :counter_cache => options[:counter_cache],
                :inverse_of => (:children unless options[:polymorphic])
 
     include ClassMethods

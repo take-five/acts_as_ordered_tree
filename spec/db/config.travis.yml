@@ -2,11 +2,13 @@ pg:
   adapter: postgresql
   username: postgres
   database: acts_as_ordered_tree_test
+  allow_concurrency: true
   min_messages: ERROR
 mysql:
   adapter: mysql2
   database: acts_as_ordered_tree_test
   username: travis
+  password:
   encoding: utf8
 sqlite3:
   adapter: sqlite3

@@ -3,6 +3,7 @@ appraise 'rails3.0' do
 
   gem 'activerecord-jdbcpostgresql-adapter', '~> 1.2.2', :platform => :jruby
   gem 'activerecord-jdbcsqlite3-adapter', '~> 1.2.2', :platform => :jruby
+  gem 'activerecord-mysql2-adapter'
 end
 
 appraise 'rails3.1' do

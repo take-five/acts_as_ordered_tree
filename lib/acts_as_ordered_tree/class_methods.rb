@@ -1,4 +1,7 @@
-require "acts_as_ordered_tree/adapters/postgresql_adapter"
+# coding: utf-8
+
+require 'acts_as_ordered_tree/adapters/postgresql_adapter'
+require 'acts_as_ordered_tree/transaction/factory'
 
 module ActsAsOrderedTree
   module ClassMethods
@@ -11,9 +14,6 @@ module ActsAsOrderedTree
       # add +leaves+ scope only if counter_cache column present
       scope :leaves, -> { where(arel_table[children_counter_cache_column].eq(0)) } if
           children_counter_cache?
-
-      # when default value for counter_cache is absent we should set it manually
-      before_create "self.#{children_counter_cache_column} = 0" if children_counter_cache?
     end
 
     module ClassMethods
@@ -36,28 +36,8 @@ module ActsAsOrderedTree
       def setup_ordered_tree_callbacks #:nodoc:
         define_model_callbacks :move, :reorder
 
-        if depth_column
-          before_create :set_depth!
-          before_save   :set_depth!, :if => "#{parent_column}_changed?".to_sym
-          around_move   :update_descendants_depth
-          around_update :update_descendants_depth
-        end
-
-        if children_counter_cache_column
-          around_move :update_counter_cache
-        end
-
-        unless scope_column_names.empty?
-          before_save :set_scope!, :unless => :root?
-        end
-
-        after_save :move_to_root, :unless => [position_column, parent_column]
-        after_save 'move_to_child_of(parent)', :if => parent_column, :unless => position_column
-        after_save "move_to_child_with_index(parent, #{position_column})",
-                   :if => "#{position_column} && (#{position_column}_changed? || #{parent_column}_changed?)"
-
-        before_destroy :flush_descendants
-        after_destroy "decrement_lower_positions(#{parent_column}_was, #{position_column}_was)", :if => position_column
+        around_save :save_ordered_tree_node
+        around_destroy :destroy_ordered_tree_node
       end
 
       def setup_ordered_tree_validations #:nodoc:
@@ -67,6 +47,13 @@ module ActsAsOrderedTree
 
         # setup validations
         validates_with Validators::CyclicReferenceValidator, :on => :update, :if => :parent
+
+        #validates position_column,
+        #          :numericality => {
+        #              :only_integer => true,
+        #              :greater_than => 0,
+        #              :allow_blank => true
+        #          }
       end
     end # module ClassMethods
   end # module ClassMethods

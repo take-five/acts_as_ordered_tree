@@ -26,4 +26,5 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'database_cleaner', '>= 1.2.0'
   s.add_development_dependency 'factory_girl', '< 3'
   s.add_development_dependency 'appraisal', '>= 0.4.0'
+  s.add_development_dependency 'rsec'
 end

@@ -17,8 +17,7 @@ end
 require 'db/boot'
 
 require 'factory_girl'
-
-require 'shoulda-matchers'
+silence_warnings { require 'shoulda-matchers' }
 require 'support/factories'
 require 'support/matchers'
 

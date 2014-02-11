@@ -86,7 +86,7 @@ Feature: change record's parent and save
       >node 1 / level = 1 / position = 1
         !node 2 / level = 2 / position = 1
           node 3 / level = 3 / position = 1
-          node 4 / level = 3 / position = 1
+          node 4 / level = 3 / position = 2
       node 5 / level = 1 / position = 2
     """
 
@@ -113,5 +113,31 @@ Feature: change record's parent and save
         !node 4 / level = 2 / position = 3
           node 5 / level = 3 / position = 1
           node 6 / level = 3 / position = 2
+      node 7 / level = 1 / position = 2
+    """
+
+  Scenario: move node with descendants to non-root node with descendants to certain position
+    Given the following tree exists:
+    """
+    root
+      >node 1
+        node 2
+        node 3
+      !node 4
+        node 5
+        node 6
+      node 7
+    """
+    When I change "!node 4" parent to ">node 1" with position 2
+    And I save record
+    Then I should have following tree:
+    """
+    root / level = 0 / position = 1
+      >node 1 / level = 1 / position = 1
+        node 2 / level = 2 / position = 1
+        !node 4 / level = 2 / position = 2
+          node 5 / level = 3 / position = 1
+          node 6 / level = 3 / position = 2
+        node 3 / level = 2 / position = 3
       node 7 / level = 1 / position = 2
     """
