@@ -1,15 +1,22 @@
-require "acts_as_ordered_tree/relation/base"
+# coding: utf-8
 
 module ActsAsOrderedTree
   module Relation
-    # Common relation, but with already loaded records
-    class Preloaded < Base
-      # Set loaded records to +records+
+    # AR::Relation extension which adds ability to explicitly set records
+    #
+    # @example
+    #   records = MyModel.where(:parent_id => nil).to_a
+    #   relation = MyModel.where(:parent_id => nil).
+    #      extending(ActsAsOrderedTree::Relation::Preloaded).
+    #      records(records)
+    #   relation.to_a.should be records
+    module Preloaded
       def records(records)
-        relation = clone
-        relation.instance_variable_set :@records, records
-        relation.instance_variable_set :@loaded,  true
-        relation
+        @where_values = build_where(:id => records.map(&:id).compact)
+        @records = records
+        @loaded = true
+
+        self
       end
     end
   end

@@ -1,4 +1,4 @@
-require 'acts_as_ordered_tree/arrangeable'
+require 'acts_as_ordered_tree/relation/arrangeable'
 require 'acts_as_ordered_tree/relation/preloaded'
 
 module ActsAsOrderedTree
@@ -19,9 +19,9 @@ module ActsAsOrderedTree
 
           with_recursive_join(query, 'self_and_ancestors').
               order('self_and_ancestors._depth DESC').
-              extending(Arrangeable)
+              extending(Relation::Arrangeable)
         else
-          (ancestors + [self]).tap { |ary| ary.extend(Arrangeable) }
+          (ancestors + [self]).tap { |ary| ary.extend(Relation::Arrangeable) }
         end
       end
 
@@ -39,7 +39,7 @@ module ActsAsOrderedTree
 
         with_recursive_join(query, 'ancestors').
             order('ancestors._depth DESC').
-            extending(Arrangeable)
+            extending(Relation::Arrangeable)
       end
 
       def root
@@ -59,7 +59,7 @@ module ActsAsOrderedTree
 
         with_recursive_join(query, 'descendants').
             order('descendants._positions ASC').
-            extending(Arrangeable)
+            extending(Relation::Arrangeable)
       end
 
       def descendants

@@ -34,7 +34,7 @@ module ActsAsOrderedTree
     # Returns scope to which record should be applied
     def scope
       if record.scope_column_names.empty?
-        record.class.base_class
+        record.class.base_class.where(nil)
       else
         record.class.base_class.where Hash[record.scope_column_names.map { |column| [column, record[column]] }]
       end

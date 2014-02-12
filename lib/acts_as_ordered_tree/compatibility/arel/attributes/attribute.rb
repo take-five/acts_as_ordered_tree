@@ -2,7 +2,7 @@ require 'acts_as_ordered_tree/compatibility/arel/math'
 
 module Arel
   module Attributes
-    class Attribute < Attribute.superclass
+    Attribute.class_eval do
       include Arel::Math
     end
   end

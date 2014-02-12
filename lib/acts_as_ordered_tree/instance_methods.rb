@@ -2,7 +2,7 @@
 
 require 'acts_as_ordered_tree/node'
 require 'acts_as_ordered_tree/relation/preloaded'
-require 'acts_as_ordered_tree/arrangeable'
+require 'acts_as_ordered_tree/relation/arrangeable'
 require 'acts_as_ordered_tree/transaction/factory'
 
 module ActsAsOrderedTree
@@ -23,6 +23,7 @@ module ActsAsOrderedTree
 
     # Returns ordered tree node - an object which maintains tree integrity.
     # WARNING: THIS METHOD IS NOT THREAD SAFE!
+    # Though I'm not sure if it can cause any problems.
     #
     # @return [ActsAsOrderedTree::Node]
     def ordered_tree_node
@@ -71,10 +72,9 @@ module ActsAsOrderedTree
       # 2. first ancestor is a root
       nodes.reverse!
 
-      # 3. create fake scope
-      ActsAsOrderedTree::Relation::Preloaded.new(self.class).
-          where(:id => nodes.map(&:id).compact).
-          extending(Arrangeable).
+      ordered_tree_node.
+          scope.
+          extending(Relation::Arrangeable, Relation::Preloaded).
           records(nodes)
     end
 
@@ -114,21 +114,25 @@ module ActsAsOrderedTree
     # Returns a set of all of its children and nested children.
     # A little bit tricky. use RDBMS with recursive queries support (PostgreSQL)
     def descendants
-      records = fetch_self_and_descendants - [self]
+      #self.class.where(:id => id).
+      #    connect_by(:id => :parent_id).
+      #    order_siblings(:position).
 
-      ActsAsOrderedTree::Relation::Preloaded.new(self.class).
-          where(:id => records.map(&:id).compact).
-          extending(Arrangeable).
+      records = children.map { |child| [child] + child.descendants }.reduce([], :+)
+
+      ordered_tree_node.
+          scope.
+          extending(Relation::Preloaded, Relation::Arrangeable).
           records(records)
     end
 
     # Returns a set of itself and all of its nested children
     def self_and_descendants
-      records = fetch_self_and_descendants
+      records = [self] + descendants
 
-      ActsAsOrderedTree::Relation::Preloaded.new(self.class).
-          where(:id => records.map(&:id)).
-          extending(Arrangeable).
+      ordered_tree_node.
+          scope.
+          extending(Relation::Preloaded, Relation::Arrangeable).
           records(records)
     end
 
@@ -191,13 +195,6 @@ module ActsAsOrderedTree
       scope_column_names.empty? || scope_column_names.all? do |attr|
         self[attr] == other[attr]
       end
-    end
-
-    # @api private
-    def ordered_tree_scope
-      ActiveSupport::Deprecation.warn("#{self.class.name}#ordered_tree_scope is deprecated and will be removed in acts_as_ordered_tree 2.1")
-
-      ordered_tree_node.scope
     end
 
     private

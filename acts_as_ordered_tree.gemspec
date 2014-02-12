@@ -13,7 +13,7 @@ Gem::Specification.new do |s|
   s.rubyforge_project = 'acts_as_ordered_tree'
 
   s.files         = `git ls-files -- lib/*`.split("\n")
-  s.test_files    = `git ls-files -- spec/*`.split("\n")
+  s.test_files    = `git ls-files -- spec/* features/*`.split("\n")
   s.require_paths = %w(lib)
 
   s.add_dependency 'activerecord', '>= 3.0.0'
