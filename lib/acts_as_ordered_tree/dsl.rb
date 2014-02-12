@@ -6,6 +6,7 @@ require 'acts_as_ordered_tree/compatibility/arel/attributes/attribute'
 require 'acts_as_ordered_tree/compatibility/arel/math'
 require 'acts_as_ordered_tree/compatibility/arel/nodes/and'
 require 'acts_as_ordered_tree/compatibility/arel/nodes/infix'
+require 'acts_as_ordered_tree/compatibility/arel/nodes/named_function'
 require 'acts_as_ordered_tree/compatibility/arel/visitors/to_sql'
 
 module Arel
@@ -120,6 +121,11 @@ module ActsAsOrderedTree
     Attribute = Class.new(Arel::Attributes::Attribute) { include Shortcuts }
     SqlLiteral = Class.new(Arel::Nodes::SqlLiteral) { include Shortcuts }
 
+    NamedFunction = Class.new(Arel::Nodes::NamedFunction) {
+      include Shortcuts
+      include Arel::Math
+    }
+
     # Create Arel::Nodes::Case node
     def switch
       Arel::Nodes::Case.new
@@ -138,7 +144,7 @@ module ActsAsOrderedTree
         name = attr.is_a?(Arel::Attributes::Attribute) ? attr.name : attr.to_s
 
         quoted = record.class.connection.quote_column_name(name)
-        "#{quoted} = #{value.to_sql}"
+        "#{quoted} = (#{value.to_sql})"
       end.join(', ')
     end
 
@@ -168,6 +174,15 @@ module ActsAsOrderedTree
 
     def table
       record.class.arel_table
+    end
+
+    def method_missing(id, *args)
+      if args.length > 0
+        # function
+        NamedFunction.new(id.to_s.upcase, args)
+      else
+        super
+      end
     end
   end # module DSL
 end # module ActsAsOrderedTree

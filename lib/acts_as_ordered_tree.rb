@@ -2,6 +2,7 @@ require 'active_record'
 require 'acts_as_ordered_tree/version'
 require 'acts_as_ordered_tree/class_methods'
 require 'acts_as_ordered_tree/instance_methods'
+require 'acts_as_ordered_tree/perseverance'
 require 'acts_as_ordered_tree/validators'
 
 module ActsAsOrderedTree
@@ -84,6 +85,7 @@ module ActsAsOrderedTree
 
     include ClassMethods
     include InstanceMethods
+    include Perseverance
     setup_ordered_tree_adapter
     setup_ordered_tree_callbacks
     setup_ordered_tree_validations

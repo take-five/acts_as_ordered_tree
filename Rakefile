@@ -34,7 +34,7 @@ namespace :db do
     end
 
     puts
-    puts 'Time taken: %.2f sec' % (time * 1000)
+    puts 'Time taken: %.2f sec' % time
 
     exit
   end
@@ -63,7 +63,7 @@ namespace :db do
   end
 
   def announce
-    puts ">> #{command.join(' ')}"
+    puts ">> DB=#{ENV['DB']} #{command.join(' ')}"
   end
 end
 

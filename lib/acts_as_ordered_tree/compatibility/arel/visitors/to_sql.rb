@@ -11,6 +11,14 @@ module Arel
         alias :visit_Arel_Nodes_Multiplication :visit_Arel_Nodes_InfixOperation
         alias :visit_Arel_Nodes_Division       :visit_Arel_Nodes_InfixOperation
       end
+
+      unless method_defined?(:visit_arel_Nodes_NamedFunction)
+        def visit_Arel_Nodes_NamedFunction o, *a
+          "#{o.name}(#{o.distinct ? 'DISTINCT ' : ''}#{o.expressions.map { |x|
+            visit x, *a
+          }.join(', ')})#{o.alias ? " AS #{visit o.alias, *a}" : ''}"
+        end
+      end
     end
   end
 end

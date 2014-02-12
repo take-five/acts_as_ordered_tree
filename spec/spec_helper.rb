@@ -22,6 +22,7 @@ require 'factory_girl'
 silence_warnings { require 'shoulda-matchers' }
 require 'support/factories'
 require 'support/matchers'
+require 'database_cleaner'
 
 RSpec.configure do |config|
   config.include FactoryGirl::Syntax::Methods
@@ -29,21 +30,22 @@ RSpec.configure do |config|
   config.treat_symbols_as_metadata_keys_with_true_values = true
 
   config.around :each, :transactional do |example|
-    ActiveRecord::Base.transaction do
-      example.run
+    DatabaseCleaner.strategy = :transaction
 
-      raise ActiveRecord::Rollback
-    end
+    DatabaseCleaner.start
+
+    example.run
+
+    DatabaseCleaner.clean
   end
 
   config.around :each, :non_transactional do |example|
-    begin
-      example.run
-    ensure
-      Default.delete_all
-      DefaultWithCounterCache.delete_all
-      DefaultWithCallbacks.delete_all
-      Scoped.delete_all
-    end
+    DatabaseCleaner.strategy = :truncation
+
+    DatabaseCleaner.start
+
+    example.run
+
+    DatabaseCleaner.clean
   end
 end

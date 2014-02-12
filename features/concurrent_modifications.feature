@@ -1,7 +1,5 @@
 @concurrent
 Feature: update tree concurrently
-  # FIXME: fails now because of #24
-  @wip
   Scenario: create root nodes in empty tree simultaneously
     When I want to create root node 3 times
     And I perform these actions simultaneously

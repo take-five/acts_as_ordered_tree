@@ -77,6 +77,10 @@ module ActsAsOrderedTree
       parent.present?
     end
 
+    def root?
+      parent.blank?
+    end
+
     def depth
       @depth ||= parent ? parent.level + 1 : 0
     end

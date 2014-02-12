@@ -33,7 +33,7 @@ module ActsAsOrderedTree
 
       # Start persevering transaction, which will restart on deadlock
       def start(&block)
-        PerseveringTransaction.new(connection).start do
+        transaction.start do
           run_callbacks :transaction, &block
         end
       end
@@ -41,6 +41,11 @@ module ActsAsOrderedTree
       protected
       def klass
         record.class
+      end
+
+      # Returns underlying transaction object
+      def transaction
+        @transaction ||= PerseveringTransaction.new(connection)
       end
     end
   end

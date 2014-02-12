@@ -10,4 +10,5 @@ New features:
 
 Bug fixes:
 
-* Fixed several issues that broke tree integrity.
+* Fixed several issues that broke tree integrity
+* Fixed bug when two root nodes could be created with same position (#24)
