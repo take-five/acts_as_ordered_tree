@@ -6,6 +6,6 @@ module Arel
       def initialize(*args)
         super(*args.flatten)
       end
-    end if And < Binary
+    end
   end
 end

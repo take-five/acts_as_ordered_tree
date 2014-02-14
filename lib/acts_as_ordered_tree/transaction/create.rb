@@ -1,14 +1,14 @@
 # coding: utf-8
 
 require 'acts_as_ordered_tree/transaction/save'
-require 'acts_as_ordered_tree/dsl'
+require 'acts_as_ordered_tree/transaction/dsl'
 
 module ActsAsOrderedTree
   module Transaction
     # Create transaction (for new records only)
     # @api private
     class Create < Save
-      include ActsAsOrderedTree::DSL
+      include DSL
 
       before :push_to_bottom_after_commit, :if => 'push_to_bottom? && to.root?'
       before :set_counter_cache, :if => 'klass.children_counter_cache_column'

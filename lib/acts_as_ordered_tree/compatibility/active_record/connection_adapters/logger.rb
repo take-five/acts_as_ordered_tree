@@ -3,7 +3,7 @@
 module ActiveRecord
   module ConnectionAdapters
     class AbstractAdapter
-      attr_reader :logger unless method_defined?(:logger)
+      attr_reader :logger
     end
   end
 end

@@ -1,7 +1,5 @@
 # coding: utf-8
 
-require 'acts_as_ordered_tree/compatibility/active_record/connection_adapters/abstract_adapter'
-
 module ActsAsOrderedTree
   class PerseveringTransaction
     module State

@@ -1,5 +1,3 @@
-require 'acts_as_ordered_tree/compatibility/arel/math'
-
 module Arel
   module Nodes
     class InfixOperation < Binary
@@ -38,5 +36,20 @@ module Arel
         super(:-, left, right)
       end
     end
-  end unless Nodes.const_defined?(:InfixOperation)
+  end
+end
+
+module Arel
+  module Visitors
+    class ToSql < Arel::Visitors::Visitor
+      def visit_Arel_Nodes_InfixOperation o, *a
+        "#{visit o.left, *a} #{o.operator} #{visit o.right, *a}"
+      end
+
+      alias :visit_Arel_Nodes_Addition       :visit_Arel_Nodes_InfixOperation
+      alias :visit_Arel_Nodes_Subtraction    :visit_Arel_Nodes_InfixOperation
+      alias :visit_Arel_Nodes_Multiplication :visit_Arel_Nodes_InfixOperation
+      alias :visit_Arel_Nodes_Division       :visit_Arel_Nodes_InfixOperation
+    end
+  end
 end

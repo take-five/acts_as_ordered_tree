@@ -1,5 +1,6 @@
 require 'active_record'
 require 'acts_as_ordered_tree/version'
+require 'acts_as_ordered_tree/compatibility'
 require 'acts_as_ordered_tree/class_methods'
 require 'acts_as_ordered_tree/instance_methods'
 require 'acts_as_ordered_tree/perseverance'

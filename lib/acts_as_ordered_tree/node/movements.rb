@@ -131,7 +131,7 @@ module ActsAsOrderedTree
       # @param [ActiveRecord::Base, #to_i]
       def initialize(node, target, &block)
         @node = node
-        @target = target
+        @_target = target
 
         @from = Position.new(node, node.parent_id, node.position)
         @to = Position.new(node, nil, nil)
@@ -142,7 +142,7 @@ module ActsAsOrderedTree
 
       def start
         persevering do
-          @block.call(@to, target!) if @block
+          @block.call(@to, target) if @block
 
           return false unless valid?
 
@@ -152,7 +152,7 @@ module ActsAsOrderedTree
 
       private
       def valid?
-        @node.record != @target.try(:record) && @to.valid?
+        @node.record != target.try(:record) && @to.valid?
       end
 
       def transaction
@@ -167,8 +167,8 @@ module ActsAsOrderedTree
         end
       end
 
-      def target!
-        @target &&= @node.scope.lock.find(@target).ordered_tree_node
+      def target
+        @target ||= @_target && @node.scope.lock.find(@_target).ordered_tree_node
       end
     end # class Movement
   end # module Node::Movements

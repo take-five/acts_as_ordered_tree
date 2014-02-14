@@ -4,7 +4,7 @@ require 'active_support/core_ext/object/with_options'
 
 require 'acts_as_ordered_tree/position'
 require 'acts_as_ordered_tree/transaction/save'
-require 'acts_as_ordered_tree/dsl'
+require 'acts_as_ordered_tree/transaction/dsl'
 
 module ActsAsOrderedTree
   module Transaction
@@ -13,7 +13,7 @@ module ActsAsOrderedTree
     # @abstract
     # @api private
     class Update < Save
-      include ActsAsOrderedTree::DSL
+      include DSL
 
       attr_reader :from, :transition
 
