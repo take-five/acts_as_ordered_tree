@@ -12,12 +12,22 @@ module ActsAsOrderedTree
     #   relation.to_a.should be records
     module Preloaded
       def records(records)
-        @where_values = build_where(:id => records.map(&:id).compact)
+        self.where_values = build_where(:id => records.map(&:id).compact)
+
         @records = records
         @loaded = true
 
         self
       end
-    end
-  end
-end
+
+      # Reverse the existing order of records on the relation.
+      def reverse_order
+        (respond_to?(:spawn) ? spawn : clone).records(@records.reverse)
+      end
+
+      def reverse_order!
+        @records.reverse!
+      end
+    end # module Preloaded
+  end # module Relation
+end # module ActsAsOrderedTree
