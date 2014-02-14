@@ -20,4 +20,4 @@ I18n.enforce_available_locales = false if I18n.respond_to?(:enforce_available_lo
 
 load(File.join(base_dir, 'schema.rb'))
 
-require File.join(base_dir, '..', 'support', 'models')
+require File.join(base_dir, '..', 'models')

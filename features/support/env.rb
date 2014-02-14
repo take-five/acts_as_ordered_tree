@@ -16,7 +16,7 @@ unless ENV['NOCOV']
   end
 end
 
-require File.expand_path('../../spec/db/boot', File.dirname(__FILE__))
+require File.expand_path('../../spec/support/db/boot', File.dirname(__FILE__))
 
 DatabaseCleaner.strategy = :truncation
 

@@ -9,7 +9,7 @@ require 'erb'
 namespace :db do
   config_name = ENV['DBCONF'] || 'config.yml'
 
-  databases = YAML.load(ERB.new(IO.read(File.join(File.dirname(__FILE__), 'spec', 'db', config_name))).result)
+  databases = YAML.load(ERB.new(IO.read(File.join(File.dirname(__FILE__), 'spec', 'support', 'db', config_name))).result)
 
   databases.each do |name, spec|
     desc "Run given task for #{spec['adapter']} database"

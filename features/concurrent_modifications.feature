@@ -34,6 +34,26 @@ Feature: update tree concurrently
       * / position = 3
     """
 
+  Scenario: move same node simultaneously
+    Given the following tree exists:
+    """
+    node 1
+    node 2
+    node 3
+    node 4
+    """
+    When I want to move node "node 2" higher
+    And I want to move node "node 2" lower
+    And I want to move node "node 2" to right of "node 4"
+    And I perform these actions simultaneously
+    Then I should have following tree:
+    """
+    * / position = 1
+    * / position = 2
+    * / position = 3
+    * / position = 4
+    """
+
   Scenario: move nodes to same parent simultaneously
     Given the following tree exists:
     """

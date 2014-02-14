@@ -1,6 +1,7 @@
 # coding: utf-8
 
 require 'spec_helper'
+
 describe ActsAsOrderedTree::Relation::Arrangeable, :transactional do
   let(:root) { create :default }
   let(:child_1) { create :default, :parent => root }

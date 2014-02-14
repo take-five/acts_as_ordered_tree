@@ -16,7 +16,7 @@ unless ENV['NOCOV']
   end
 end
 
-require 'db/boot'
+require 'support/db/boot'
 
 require 'factory_girl'
 silence_warnings { require 'shoulda-matchers' }
