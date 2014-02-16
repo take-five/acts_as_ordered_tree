@@ -34,7 +34,7 @@ module ActsAsOrderedTree
           expr.when(positions_range).then(position + 1)
         end
 
-        node.siblings.where(positions_range).update_all set position => expr
+        to.siblings.where(positions_range).update_all set position => expr
       end
     end
   end

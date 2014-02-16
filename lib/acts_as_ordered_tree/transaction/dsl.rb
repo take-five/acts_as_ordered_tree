@@ -151,19 +151,19 @@ module ActsAsOrderedTree
       end
 
       def id
-        attribute(record.class.primary_key)
+        attribute(record.ordered_tree.columns.id)
       end
 
       def parent_id
-        attribute(record.class.parent_column)
+        attribute(record.ordered_tree.columns.parent)
       end
 
       def position
-        attribute(record.class.position_column)
+        attribute(record.ordered_tree.columns.position)
       end
 
       def depth
-        attribute(record.class.depth_column)
+        attribute(record.ordered_tree.columns.depth)
       end
 
       def table

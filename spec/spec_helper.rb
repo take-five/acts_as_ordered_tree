@@ -5,8 +5,9 @@ require 'bundler/setup'
 
 require 'rspec'
 require 'rspec-expectations'
+require 'active_support/core_ext/object/blank'
 
-unless ENV['NOCOV']
+if ENV['COVERAGE'].present?
   begin
     require 'simplecov'
     SimpleCov.command_name "rspec/#{File.basename(ENV['BUNDLE_GEMFILE'])}/#{ENV['DB']}"
@@ -28,6 +29,10 @@ RSpec.configure do |config|
   config.include FactoryGirl::Syntax::Methods
 
   config.treat_symbols_as_metadata_keys_with_true_values = true
+
+  config.around :each, :pg do |example|
+    example.run if ENV['DB'] == 'pg'
+  end
 
   config.around :each, :transactional do |example|
     DatabaseCleaner.strategy = :transaction

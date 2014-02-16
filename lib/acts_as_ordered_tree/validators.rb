@@ -8,7 +8,7 @@ module ActsAsOrderedTree
 
     class ScopeValidator < ActiveModel::Validator
       def validate(record)
-        record.errors.add(:parent, :scope) unless record.same_scope?(record.parent)
+        record.errors.add(:parent, :scope) unless record.ordered_tree_node.same_scope?(record.parent)
       end
     end
   end

@@ -23,7 +23,7 @@ module ActsAsOrderedTree
 
       attr_reader :node
 
-      delegate :record, :to => :node
+      delegate :record, :tree, :to => :node
       delegate :connection, :to => :klass
 
       # @param [ActsAsOrderedTree::Node] node

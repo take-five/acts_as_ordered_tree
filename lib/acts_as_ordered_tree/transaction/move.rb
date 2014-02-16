@@ -13,7 +13,7 @@ module ActsAsOrderedTree
 
       before :update_descendants_depth, :if => [
           'transition.movement?',
-          'klass.depth_column',
+          'tree.columns.depth?',
           'transition.level_changed?',
           'record.children.size > 0'
       ]
@@ -29,7 +29,7 @@ module ActsAsOrderedTree
           parent_id => parent_id_value
         ]
 
-        updates[depth] = depth_value if klass.depth_column && transition.level_changed?
+        updates[depth] = depth_value if tree.columns.depth? && transition.level_changed?
 
         scope.update_all set updates
       end

@@ -112,13 +112,13 @@ module ActsAsOrderedTree
 
     # Returns all nodes within given position
     def siblings
-      node.scope.where(klass.parent_column => parent_id)
+      node.scope.where(klass.ordered_tree.columns.parent => parent_id)
     end
 
     # Returns all nodes that are lower than current position
     def lower
       position? ?
-          siblings.where(klass.arel_table[klass.position_column].gteq(position)) :
+          siblings.where(klass.arel_table[klass.ordered_tree.columns.position].gteq(position)) :
           siblings
     end
 
@@ -140,13 +140,13 @@ module ActsAsOrderedTree
 
     private
     def fetch_parent
-      parent_id == record[klass.parent_column] ?
+      parent_id == record[klass.ordered_tree.columns.parent] ?
           record.parent :
           node.scope.find(parent_id)
     end
 
     def update_counter(method)
-      if (column = klass.children_counter_cache_column) && parent_id
+      if (column = klass.ordered_tree.columns.counter_cache) && parent_id
         klass.send(method, column, parent_id)
       end
     end

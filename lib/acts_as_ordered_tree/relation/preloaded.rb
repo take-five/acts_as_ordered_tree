@@ -12,7 +12,8 @@ module ActsAsOrderedTree
     #   relation.to_a.should be records
     module Preloaded
       def records(records)
-        self.where_values = build_where(:id => records.map(&:id).compact)
+        ids = records.map { |r| r.id if r }.compact
+        self.where_values = build_where(:id => ids)
 
         @records = records
         @loaded = true
@@ -27,6 +28,11 @@ module ActsAsOrderedTree
 
       def reverse_order!
         @records.reverse!
+      end
+
+      # Extending relation is not really intrusive operation, so we can save preloaded records
+      def extending(*)
+        super.tap { |relation| relation.records(@records) if loaded? }
       end
     end # module Preloaded
   end # module Relation

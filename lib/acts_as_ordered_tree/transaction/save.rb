@@ -28,14 +28,14 @@ module ActsAsOrderedTree
       def copy_attributes
         record.parent = to.parent
         node.position = to.position
-        node.depth = to.depth if klass.depth_column
+        node.depth = to.depth if tree.columns.depth?
 
         yield
       end
 
       # Returns highest position within node's siblings
       def highest_position
-        @highest_position ||= to.siblings.maximum(klass.position_column) || 0
+        @highest_position ||= to.siblings.maximum(tree.columns.position) || 0
       end
 
       # Should be fired when given position is empty
@@ -51,7 +51,7 @@ module ActsAsOrderedTree
 
       private
       def set_scope!
-        klass.scope_column_names.each do |column|
+        tree.columns.scope.each do |column|
           record[column] = to.parent[column]
         end
 

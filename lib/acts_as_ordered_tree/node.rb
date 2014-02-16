@@ -1,26 +1,22 @@
 # coding: utf-8
 
-require 'active_support/dependencies/autoload'
-
-require 'acts_as_ordered_tree/position'
-require 'acts_as_ordered_tree/transaction/create'
-require 'acts_as_ordered_tree/transaction/move'
-require 'acts_as_ordered_tree/transaction/reorder'
-require 'acts_as_ordered_tree/transaction/destroy'
+require 'acts_as_ordered_tree/node/attributes'
+require 'acts_as_ordered_tree/node/movements'
+require 'acts_as_ordered_tree/node/predicates'
+require 'acts_as_ordered_tree/node/reloading'
+require 'acts_as_ordered_tree/node/siblings'
+require 'acts_as_ordered_tree/node/traversals'
 
 module ActsAsOrderedTree
   # ActsAsOrderedTree::Node takes care of tree integrity when record is saved
   # via usual ActiveRecord mechanism
   class Node
-    extend ActiveSupport::Autoload
-
-    autoload :Attributes
-    autoload :Movements
-    autoload :Reloading
-
     include Attributes
     include Movements
+    include Predicates
     include Reloading
+    include Siblings
+    include Traversals
 
     # @attr_reader [ActiveRecord::Base] original AR record, created, updated or destroyed
     attr_reader :record
@@ -33,16 +29,42 @@ module ActsAsOrderedTree
 
     # Returns scope to which record should be applied
     def scope
-      if record.scope_column_names.empty?
-        record.class.base_class.where(nil)
+      if tree.columns.scope?
+        record.class.base_class.where Hash[tree.columns.scope.map { |column| [column, record[column]] }]
       else
-        record.class.base_class.where Hash[record.scope_column_names.map { |column| [column, record[column]] }]
+        record.class.base_class.where(nil)
       end
     end
 
-    # ? should it really be here?
-    def siblings
-      scope.where(record.class.parent_column => parent_id)
+    # Convert node to AR::Relation
+    #
+    # @return [ActiveRecord::Relation]
+    def to_relation
+      scope.where(tree.columns.id => id)
+    end
+
+    # @return [ActsAsOrderedTree::Tree]
+    def tree
+      record.class.ordered_tree
+    end
+
+    # Returns node level value (0 for root)
+    #
+    # @return [Fixnum]
+    def level
+      if tree.columns.depth? && record.persisted? && !parent_id_changed? && depth?
+        depth
+      else
+        # @todo move it adapters
+        # @todo check if parent loaded and return its level
+        ancestors.size
+      end
+    end
+
+    private
+    # @return [Arel::Table]
+    def table
+      record.class.arel_table
     end
   end # class Node
 end # module ActsAsOrderedTree

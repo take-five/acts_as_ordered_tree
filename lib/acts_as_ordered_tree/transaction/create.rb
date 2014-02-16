@@ -11,13 +11,13 @@ module ActsAsOrderedTree
       include DSL
 
       before :push_to_bottom_after_commit, :if => 'push_to_bottom? && to.root?'
-      before :set_counter_cache, :if => 'klass.children_counter_cache_column'
+      before :set_counter_cache, :if => 'tree.columns.counter_cache?'
       before :increment_lower_positions, :unless => :push_to_bottom?
       after  'to.increment_counter'
 
       private
       def set_counter_cache
-        record[klass.children_counter_cache_column] = 0
+        record[tree.columns.counter_cache] = 0
       end
 
       def increment_lower_positions

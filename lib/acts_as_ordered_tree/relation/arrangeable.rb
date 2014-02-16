@@ -21,7 +21,7 @@ module ActsAsOrderedTree
           @discard_orphans = options[:orphans] == :discard
           @min_level = nil
 
-          if discard_orphans? && !collection.klass.depth_column && ActiveRecord::Base.logger
+          if discard_orphans? && !collection.klass.ordered_tree.columns.depth? && ActiveRecord::Base.logger
             ActiveRecord::Base.logger.warn {
               '%s model has no `depth` column, '\
             'it can lead to N+1 queries during #arrange method invocation' % collection.klass
@@ -72,7 +72,7 @@ module ActsAsOrderedTree
 
         # get parent node of +node+
         def parent(node)
-          cache[node[node.parent_column]]
+          cache[node.ordered_tree_node.parent_id]
         end
 
         def ancestors(node)

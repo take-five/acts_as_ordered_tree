@@ -75,14 +75,14 @@ module TreeParserHelper
 
   def inspect_tree(node = nil, buf = '')
     if node
-      buf << ('  ' * node.level) + node.name + " / level = #{node.level} / position = #{node[node.position_column]}"
+      buf << ('  ' * node.level) + node.name + " / level = #{node.level} / position = #{node.ordered_tree_node.position}"
 
       node.attributes.except(
           node.class.primary_key,
           'name',
-          node.depth_column.to_s,
-          node.position_column.to_s,
-          node.parent_column.to_s
+          node.ordered_tree.columns.depth,
+          node.ordered_tree.columns.position,
+          node.ordered_tree.columns.parent
       ).each do |k, v|
         buf << " / #{k} = #{v.inspect}"
       end
@@ -129,7 +129,7 @@ RSpec::Matchers.define :match_actual_tree do
       root.self_and_descendants.map do |node|
         tnode = TreeParserHelper::TreeNode.new(node.name, node.parent.try(:name))
         tnode.attributes[:level] = node.level
-        tnode.attributes[:position] = node[node.position_column]
+        tnode.attributes[:position] = node.ordered_tree_node.position
         tnode.attributes.merge!(node.attributes)
         tnode
       end

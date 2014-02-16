@@ -11,8 +11,8 @@ describe ActsAsOrderedTree::Node, '#reload', :transactional do
       # change all attributes
       before { node.parent_id = create(model, attrs).id }
       before { node.position = 3 }
-      before { node.depth = 2 if record.class.depth_column }
-      before { record[record.class.children_counter_cache_column] = 5 if record.class.children_counter_cache_column }
+      before { node.depth = 2 if record.ordered_tree.columns.depth? }
+      before { record[record.ordered_tree.columns.counter_cache] = 5 if record.ordered_tree.columns.counter_cache? }
       before { record.name = 'another name' }
 
       it 'reloads attributes related to tree' do
@@ -21,11 +21,11 @@ describe ActsAsOrderedTree::Node, '#reload', :transactional do
         expect(node.parent_id).to eq nil
         expect(node.position).to eq 1
 
-        if record.class.depth_column
+        if record.ordered_tree.columns.depth?
           expect(node.depth).to eq 0
         end
 
-        if record.class.children_counter_cache_column
+        if record.class.ordered_tree.columns.counter_cache?
           expect(record.children.size).to eq 0
         end
       end

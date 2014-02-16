@@ -77,5 +77,18 @@ Cucumber::Rake::Task.new(:features) do |t|
   t.cucumber_opts = 'features --color --format progress --tags ~@wip'
 end
 
+desc 'Turn on code coverage'
+task :cov do
+  ENV['COVERAGE'] = '1' unless ENV.key?('COVERAGE')
+end
+
+desc 'Turn off coverage'
+task :nocov do
+  ENV['COVERAGE'] = ''
+end
+
+task :spec => :cov
+task :features => :cov
+
 desc 'Run all test suits'
 task :test => [:spec, :features]

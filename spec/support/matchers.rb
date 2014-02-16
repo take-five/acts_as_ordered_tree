@@ -11,9 +11,83 @@ module RSpec::Matchers
     FireCallbackMatcher.new(name)
   end
 
+  # it { expect{...}.to query_database.once }
+  # it { expect{...}.to query_database.at_most(2).times }
+  # it { expect{...}.not_to query_database }
+  def query_database
+    QueryDatabaseMatcher.new
+  end
+
   # example { expect(record1, record2, record3).to be_sorted }
   def be_sorted
     OrderMatcher.new
+  end
+
+  class QueryDatabaseMatcher
+    def initialize
+      @min = 1
+      @max = nil
+    end
+
+    def times
+      self
+    end
+    alias time times
+
+    def at_least(times)
+      @min = times == :once ? 1 : times
+      self
+    end
+
+    def at_most(times)
+      @max = times == :once ? 1 : times
+      self
+    end
+
+    def exactly(times)
+      at_least(times).at_most(times)
+      self
+    end
+
+    def once
+      exactly(1)
+    end
+
+    def twice
+      exactly(2)
+    end
+
+    def matches?(subject)
+      record_queries { subject.call }
+
+      expected_queries_count.include?(@queries.size)
+    end
+
+    def failure_message_for_should
+      "expected given block to query database (#{@min}..#{@max}) times, but #{@queries.size} queries sent"
+    end
+
+    def failure_message_for_should_not
+      "expected given block to query database, "\
+      "but #{@queries.size} queries sent:\n#{@queries.each_with_index.map { |q, i| "#{i+1}. #{q}"}.join("\n")}"
+    end
+
+    private
+    def record_queries
+      @queries = []
+
+      subscriber = ActiveSupport::Notifications.subscribe('sql.active_record') do |*, sql|
+        @queries << sql[:sql]
+      end
+
+      yield
+    ensure
+      ActiveSupport::Notifications.unsubscribe(subscriber)
+    end
+
+    def expected_queries_count
+      (@min..@max || 10000)
+    end
   end
 
   class FireCallbackMatcher
@@ -118,7 +192,7 @@ module RSpec::Matchers
     def matches?(*records)
       @records = Array.wrap(records).flatten
 
-      @records.sort_by { |record| record.reload[record.position_column] } == @records
+      @records.sort_by { |record| record.reload.ordered_tree_node.position } == @records
     end
 
     def failure_message_for_should

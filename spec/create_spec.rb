@@ -26,7 +26,7 @@ describe ActsAsOrderedTree, 'Create node', :transactional do
       end
 
       it 'calculates depth column' do
-        if record.class.depth_column
+        if record.ordered_tree.columns.depth?
           expect{record.save}.to change{record.depth}.from(nil).to(parent ? parent.depth + 1 : 0)
         end
       end
@@ -62,7 +62,7 @@ describe ActsAsOrderedTree, 'Create node', :transactional do
       end
 
       it 'calculates depth column' do
-        if record.class.depth_column
+        if record.ordered_tree.columns.depth?
           expect{record.save}.to change{record.depth}.from(nil).to(parent ? parent.depth + 1 : 0)
         end
       end

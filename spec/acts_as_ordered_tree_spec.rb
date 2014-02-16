@@ -1,47 +1,6 @@
 require File.expand_path('../spec_helper', __FILE__)
 
 describe ActsAsOrderedTree, :transactional do
-  describe "defaults" do
-    subject { Default }
-
-    its(:parent_column) { should eq :parent_id }
-    its(:position_column) { should eq :position }
-    its(:depth_column) { should eq :depth }
-    its(:children_counter_cache_column) { be_nil }
-
-    if ActsAsOrderedTree::PROTECTED_ATTRIBUTES_SUPPORTED
-      context "instance" do
-        subject { Default.new }
-
-        it { should_not allow_mass_assignment_of(:position) }
-        it { should_not allow_mass_assignment_of(:depth) }
-      end
-    end
-  end
-
-  describe "default with counter cache" do
-    subject { DefaultWithCounterCache }
-
-    its(:children_counter_cache_column) { should eq :categories_count }
-  end
-
-  describe "renamed columns" do
-    subject { RenamedColumns }
-
-    its(:parent_column) { should eq :mother_id }
-    its(:position_column) { should eq :red }
-    its(:depth_column) { should eq :pitch }
-
-    if ActsAsOrderedTree::PROTECTED_ATTRIBUTES_SUPPORTED
-      context "instance" do
-        subject { RenamedColumns.new }
-
-        it { should_not allow_mass_assignment_of(:red) }
-        it { should_not allow_mass_assignment_of(:pitch) }
-      end
-    end
-  end
-
   it "creation_with_altered_column_names" do
     lambda {
       RenamedColumns.create!()
@@ -239,7 +198,7 @@ describe ActsAsOrderedTree, :transactional do
       its(:first) { should eq root }
     end
 
-    context "when record is new" do
+    context 'when record is new' do
       let(:record) { build(:default, :parent => grandchild) }
       subject { record.self_and_ancestors }
 
@@ -439,7 +398,7 @@ describe ActsAsOrderedTree, :transactional do
     end
 
     describe "#insert_at" do
-      before { child_3.insert_at(1) }
+      before { ActiveSupport::Deprecation.silence { child_3.insert_at(1) } }
       before { child_3.reload }
 
       specify { expect([child_3, child_1, child_2]).to be_sorted }
@@ -477,10 +436,20 @@ describe ActsAsOrderedTree, :transactional do
         record = create :default_with_counter_cache, :parent => child_3
         record.depth.should eq 2
 
+        child_3.reload.depth.should eq 1
+        child_1.reload.depth.should eq 1
+
         child_3.move_to_root
         record.reload.depth.should eq 1
 
+        child_1.reload.depth.should eq 1
+
         child_3.move_to_child_of child_1
+        child_3.reload
+
+        child_3.parent.should eq child_1
+        child_3.depth.should eq 2
+
         record.reload.depth.should eq 3
       end
 
@@ -530,7 +499,7 @@ describe ActsAsOrderedTree, :transactional do
       root1.position.should eq root2.position
     end
     it "should automatically set scope for new records with parent" do
-      child1.should be_same_scope(root1)
+      child1.ordered_tree_node.should be_same_scope(root1)
     end
     it "should not include orphans" do
       root1.children.reload.should_not include orphan
