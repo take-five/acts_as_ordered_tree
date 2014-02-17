@@ -21,7 +21,8 @@ module ActsAsOrderedTree
 
       def descendants(node, &block)
         traverse_down(node) do
-          descendants_scope(node.association(:children).scope, &block)
+          scope = self_and_descendants(node, &block)
+          scope.where(scope.table[columns.id].not_eq(node.id))
         end
       end
 
@@ -33,7 +34,8 @@ module ActsAsOrderedTree
 
       def ancestors(node, &block)
         traverse_up(node) do
-          ancestors_scope(node.association(:parent).scope, &block)
+          scope = self_and_ancestors(node, &block)
+          scope.where(scope.table[columns.id].not_eq(node.id))
         end
       end
 
@@ -67,7 +69,7 @@ module ActsAsOrderedTree
       def descendants_scope(scope, &block)
         scope.
         extending(Relation::Recursive).
-        recursive_join(columns.id => columns.parent, &block).
+        recursive_join(scope_columns_hash.merge(columns.id => columns.parent), &block).
           start_with do |start|
             start.select(positions_array.as(positions_alias))
           end.
@@ -81,7 +83,7 @@ module ActsAsOrderedTree
       def ancestors_scope(scope, &block)
         traverse = scope.
           extending(Relation::Recursive).
-          recursive_join(columns.parent => columns.id, &block)
+          recursive_join(scope_columns_hash.merge(columns.parent => columns.id), &block)
 
         if columns.depth?
           traverse.start_with { |start| start.select depth }
@@ -132,6 +134,10 @@ module ActsAsOrderedTree
         end
 
         ancestors(parent) + [parent].compact + queue
+      end
+
+      def scope_columns_hash
+        Hash[tree.columns.scope.map { |x| [x, x] }]
       end
     end # class PostgreSQL
   end # module Adapters

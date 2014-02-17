@@ -68,6 +68,20 @@ shared_examples 'ActsAsOrderedTree adapter' do |adapter_class, model, attrs = {}
       include_examples 'ActsAsOrderedTree traverse down for not persisted record', :self_and_descendants
     end
 
+    describe '#self_and_descendants with traversal filters' do
+      it 'applies given block to recursive term' do
+        relation = adapter.self_and_descendants(root) { |d| d.where(d.table[:id].not_eq(child_1.id)) }
+
+        expect(relation).to eq [root, child_2, grandchild_21, grandchild_22]
+      end
+
+      example 'start conditions can be changed via #start_with method' do
+        relation = adapter.self_and_descendants(root).start_with { |s| s.where('id != ?', root.id) }
+
+        expect(relation).to be_empty
+      end
+    end
+
     describe '#descendants' do
       context 'when persisted record given' do
         subject(:relation) { adapter.descendants(root) }
@@ -99,6 +113,20 @@ shared_examples 'ActsAsOrderedTree adapter' do |adapter_class, model, attrs = {}
       end
 
       include_examples 'ActsAsOrderedTree traverse down for not persisted record', :descendants
+    end
+
+    describe '#descendants with traversal filters' do
+      it 'applies given block to recursive term' do
+        relation = adapter.descendants(root) { |d| d.where(d.table[:id].not_eq(child_1.id)) }
+
+        expect(relation).to eq [child_2, grandchild_21, grandchild_22]
+      end
+
+      example 'start conditions can be changed via #start_with method' do
+        relation = adapter.descendants(root).start_with { |s| s.where('id != ?', root.id) }
+
+        expect(relation).to be_empty
+      end
     end
 
     describe '#self_and_ancestors' do
@@ -153,6 +181,20 @@ shared_examples 'ActsAsOrderedTree adapter' do |adapter_class, model, attrs = {}
       end
     end
 
+    describe '#self_and_ancestors with traversal filters' do
+      it 'applies given block to recursive term' do
+        relation = adapter.self_and_ancestors(grandchild_11) { |a| a.where(a.table[:id].not_eq(root.id)) }
+
+        expect(relation).to eq [child_1, grandchild_11]
+      end
+
+      example 'start conditions can be changed via #start_with method' do
+        relation = adapter.self_and_ancestors(grandchild_11).start_with { |s| s.where('id != ?', grandchild_11.id) }
+
+        expect(relation).to be_empty
+      end
+    end
+
     describe '#ancestors' do
       context 'when persisted record given' do
         context 'when level > 0' do
@@ -190,6 +232,22 @@ shared_examples 'ActsAsOrderedTree adapter' do |adapter_class, model, attrs = {}
         it 'returns all node ancestors and itself starting from root' do
           expect(relation.to_a).to eq Array[root, child_1, grandchild_11, record_grandparent, record_parent]
         end
+      end
+    end
+
+    describe '#ancestors with traversal filters' do
+      it 'applies given block to recursive term' do
+        relation = adapter.ancestors(grandchild_11) { |a| a.where(a.table[:id].not_eq(root.id)) }
+        expect(relation).to eq [child_1]
+
+        relation = adapter.ancestors(grandchild_11) { |a| a.where(a.table[:id].not_eq(child_1.id)) }
+        expect(relation).to be_empty
+      end
+
+      example 'start conditions can be changed via #start_with method' do
+        relation = adapter.ancestors(grandchild_11).start_with { |s| s.where('id != ?', grandchild_11.id) }
+
+        expect(relation).to be_empty
       end
     end
   end

@@ -109,36 +109,51 @@ module ActsAsOrderedTree
         self
       end
 
+      # @api private
       def recursive_join_value
         @values ? @values[:recursive_join] : @recursive_join_value
       end
 
+      # @api private
       def recursive_join_value=(value)
         @values ? @values[:recursive_join] = value : @recursive_join_value = value
       end
 
+      # @api private
       def with_default_scope
         relation = super
         relation.recursive_join_value = recursive_join_value
         relation
       end
 
+      # Here we override original method, because update with join to recursive CTE
+      # is too tricky, so we perform update_all on empty relation:
+      # `update xxx set ... where id in (select id from xxx join (with recursive ...) ...)`
       def update_all(*args)
         if recursive_join_value
-          subquery = select(table[klass.primary_key])
-          subquery.order_values = []
-          subquery.limit_value = nil
-
-          relation = ActiveRecord::Relation.new(klass, table).where(klass.primary_key => subquery)
-          relation.update_all(*args)
+          with_subquery.update_all(*args)
         else
           super
         end
       end
 
+      Compatibility.version('< 3.1.0') do
+        # for rails 3.0 only: same trick as with #update_all
+        #
+        # @api private
+        def calculate(*args)
+          if recursive_join_value
+            with_subquery.calculate(*args)
+          else
+            super
+          end
+        end
+      end
+
+      # @api private
       def build_arel
         if recursive_join_value
-          as = recursive_join_value.arel.as("#{table.name}_recursive")
+          as = recursive_join_value.arel.as("#{table.name}__recursive")
           super.join(as).on(as[klass.primary_key].eq(table[klass.primary_key]))
         else
           super
@@ -146,6 +161,14 @@ module ActsAsOrderedTree
       end
 
       private
+      def with_subquery
+        subquery = select(table[klass.primary_key])
+        subquery.order_values = []
+        subquery.limit_value = nil
+
+        ActiveRecord::Relation.new(klass, table).where(klass.primary_key => subquery)
+      end
+
       # @todo beautify, refactor, write docs and move it to separate library
       class RecursiveRelation < ActiveRecord::Relation
         attr_reader :start_with_value

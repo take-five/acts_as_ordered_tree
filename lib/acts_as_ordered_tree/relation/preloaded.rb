@@ -12,10 +12,11 @@ module ActsAsOrderedTree
     #   relation.to_a.should be records
     module Preloaded
       def records(records)
-        ids = records.map { |r| r.id if r }.compact
-        self.where_values = build_where(:id => ids)
-
+        @loaded = false
         @records = records
+
+        build_where!
+
         @loaded = true
 
         self
@@ -33,6 +34,15 @@ module ActsAsOrderedTree
       # Extending relation is not really intrusive operation, so we can save preloaded records
       def extending(*)
         super.tap { |relation| relation.records(@records) if loaded? }
+      end
+
+      private
+      def record_ids
+        @records.map { |r| r.id if r }.compact
+      end
+
+      def build_where!
+        self.where_values = build_where(:id => record_ids)
       end
     end # module Preloaded
   end # module Relation
