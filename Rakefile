@@ -77,18 +77,30 @@ Cucumber::Rake::Task.new(:features) do |t|
   t.cucumber_opts = 'features --color --format progress --tags ~@wip'
 end
 
-desc 'Turn on code coverage'
-task :cov do
-  ENV['COVERAGE'] = '1' unless ENV.key?('COVERAGE')
+begin
+  require 'coveralls/rake/task'
+  Coveralls::RakeTask.new
+rescue LoadError, NameError
+  task 'coveralls:push'
 end
 
-desc 'Turn off coverage'
-task :nocov do
-  ENV['COVERAGE'] = ''
+namespace :coverage do
+  desc 'Turn on code coverage'
+  task :enable do
+    ENV['COVERAGE'] = '1' unless ENV.key?('COVERAGE')
+  end
+
+  desc 'Turn off code coverage'
+  task :disable do
+    ENV['COVERAGE'] = ''
+  end
+
+  desc 'Push code coverage to coveralls'
+  task :push => 'coveralls:push'
 end
 
-task :spec => :cov
-task :features => :cov
+task :spec => 'coverage:enable'
+task :features => 'coverage:enable'
 
 desc 'Run all test suits'
 task :test => [:spec, :features]

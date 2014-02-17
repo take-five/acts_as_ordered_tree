@@ -1,4 +1,5 @@
 language: ruby
+cache: bundler
 rvm:
   - 1.9.3
   - 2.0.0
@@ -15,7 +16,9 @@ gemfile:
   - gemfiles/rails3.2.gemfile
   - gemfiles/rails4.0.gemfile
   - gemfiles/rails4.1.gemfile
-script: "bundle exec rake db nocov test"
+script: "bundle exec rake db test"
+after_success:
+  - bundle exec rake coverage:push
 notifications:
   recipients:
     - amikhailov83@gmail.com

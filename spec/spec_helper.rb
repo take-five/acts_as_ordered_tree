@@ -11,7 +11,9 @@ if ENV['COVERAGE'].present?
   begin
     require 'simplecov'
     SimpleCov.command_name "rspec/#{File.basename(ENV['BUNDLE_GEMFILE'])}/#{ENV['DB']}"
-    SimpleCov.start 'test_frameworks'
+    SimpleCov.start 'test_frameworks' do
+      add_filter 'vendor/bundle/'
+    end
   rescue LoadError
     #ignore
   end
