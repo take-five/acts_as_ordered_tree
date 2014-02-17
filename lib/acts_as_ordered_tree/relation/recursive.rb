@@ -7,48 +7,64 @@ module ActsAsOrderedTree
     # First, you have to specify how relation should reference to itself.
     #
     # @example Traverse descendants
-    #   MyModel.where(:id => 1).recursive_join(:id, :parent_id)
+    #   MyModel.where(:id => 1).recursive_join(:id => :parent_id)
     #
     # @example Traverse ancestors
-    #   MyModel.where(:id => 1).recursive_join(:parent_id, :id)
+    #   MyModel.where(:id => 1).recursive_join(:parent_id => :id)
     #
-    # Second, you may specify conditions and sorts to apply to iteration term of recursive query.
+    # Second, you may specify conditions and orderings to apply to iteration term of recursive query.
     # That's the way how you can stop traversing tree.
     #
     # @example Traverse descendants down to 4th level
-    #   MyModel.where(:id => 1).recursive_join(:id, :parent_id) { |d| d.where('depth < 5') }
+    #   MyModel.where(:id => 1).recursive_join(:id => :parent_id) { |d| d.where('depth < 5') }
     #
     # There are is one more way to do exactly the same. By calling #recursive method on scope,
     # you can modify traverse conditions:
     #
     # @example Traverse descendants down to 4th level
-    #   MyModel.where(:id => 1).recursive_join(:id, :parent_id).recursive { |d| d.where('depth < 5') }
+    #   MyModel.where(:id => 1).recursive_join(:id => :parent_id).recursive { |d| d.where('depth < 5') }
+    #
+    # You can access non-recursive term by sending #previous method to value yielded to block.
+    #
+    # @example Traverse descendants, but visit only those whose parent has depth < 3
+    #   MyModel.where(:id => 1).
+    #     recursive_join(:id => :parent_id).
+    #     start_with { |s| s.select(:depth) }.
+    #     recursive { |d| d.where(d.previous[:depth].lt 3) }
     #
     # Also you can change non-recursive term of recursive query by changing start conditions:
     #
     # @example
-    #   MyModel.where(:id => 1).recursive_join(:id, :parent_id).start_with { |s| s.where(:archived => false) }
+    #   MyModel.where(:id => 1).recursive_join(:id => :parent_id).start_with { |s| s.where(:archived => false) }
     #   # start conditions are: where(:id => 1, :archived => false)
     module Recursive
       # Create recursive JOIN to self
       #
       # @example
-      #   MyModel.unscoped.recursive_join(:id, :parent_id) do |descendants|
+      #   # descendants query
+      #   MyModel.unscoped.recursive_join(:id => :parent_id) do |descendants|
       #     descendants.where('position < ?', 4)
       #   end
-      def recursive_join(original_term_key, recursive_term_key, &block)
+      #
+      #   # ancestors query
+      #   MyModel.unscoped.recursive_join(:parent_id => :id)
+      #
+      # @param [Hash] join_keys a hash explaining how original (starting) term will join to recursive term,
+      #   i.e. `{:id => :parent_id}` means that `id` key from starting term will be joined to `parent_id` key
+      #   from recursive term (descendants query).
+      def recursive_join(join_keys, &block)
         relation = respond_to?(:spawn) ? spawn : clone
-        relation.recursive_join!(original_term_key, recursive_term_key, &block)
+        relation.recursive_join!(join_keys, &block)
       end
 
       # Transforms current relation to recursively joined to self
       #
       # @example
-      #   MyModel.unscoped.recursive_join!(:id, :parent_id).start_with { |x| x.where(:parent_id => nil) }
-      def recursive_join!(original_term_key, recursive_term_key, &block)
-        start_scope = respond_to?(:spawn) ? spawn : clone
+      #   MyModel.unscoped.recursive_join!(:id => :parent_id).start_with { |x| x.where(:parent_id => nil) }
+      def recursive_join!(join_keys, &block)
+        relation = RecursiveRelation.new(klass, table, join_keys)
 
-        self.recursive_join_value = RecursiveRelation.new(start_scope, original_term_key, recursive_term_key)
+        self.recursive_join_value = relation.start_with(self)
 
         recursive(&block)
 
@@ -62,13 +78,13 @@ module ActsAsOrderedTree
       # Modify original term via block
       #
       # @example
-      #   MyModel.unscoped.recursive_join(:id, :parent_id) do |descendants|
+      #   MyModel.unscoped.recursive_join(:id => :parent_id) do |descendants|
       #     descendants.where('position < ?', 4).start_with { |roots| roots.where(:id => 1) }
       #   end
       #
       #   # is equivalent to
       #
-      #   MyModel.unscoped.recursive_join(:id, :parent_id) do |descendants|
+      #   MyModel.unscoped.recursive_join(:id => :parent_id) do |descendants|
       #     descendants.where('position < ?', 4)
       #   end.start_with { |roots| roots.where(:id => 1) }
       def start_with(&block)
@@ -122,7 +138,7 @@ module ActsAsOrderedTree
 
       def build_arel
         if recursive_join_value
-          as = recursive_table.as("#{table.name}_recursive")
+          as = recursive_join_value.arel.as("#{table.name}_recursive")
           super.join(as).on(as[klass.primary_key].eq(table[klass.primary_key]))
         else
           super
@@ -130,55 +146,69 @@ module ActsAsOrderedTree
       end
 
       private
-      def recursive_table
-        recursive_join_value.arel
-      end
-
       # @todo beautify, refactor, write docs and move it to separate library
       class RecursiveRelation < ActiveRecord::Relation
-        attr_reader :original_key, :recursive_key, :current_scope
+        attr_reader :start_with_value
 
-        def initialize(current_scope, original_term_key, recursive_term_key)
-          super(current_scope.klass, current_scope.table)
+        # @param [Class] klass
+        # @param [Arel::Table] table
+        # @param [Hash] join_keys a hash containing {original_term_key => recursive_term_key} map
+        def initialize(klass, table, join_keys)
+          super(klass, table)
 
-          @original_key = original_term_key.to_s
-          @recursive_key = recursive_term_key.to_s
-          select = [table[klass.primary_key], table[original_key], table[recursive_key]]
-
-          @current_scope = current_scope.select(select)
-
-          self.select_values = @current_scope.select_values.clone
+          @join_keys = join_keys.map { |original_key, recursive_key| [original_key.to_s, recursive_key.to_s] }
         end
 
-        def start_with
-          @current_scope = yield @current_scope if block_given?
+        def start_with(scope = nil)
+          if scope
+            @start_with_value = scope.select(columns)
+
+            self.select_values = start_with_value.select_values.clone
+          end
+
+          @start_with_value = yield @start_with_value if block_given?
 
           self
         end
 
-        def united_term
-          @united_term ||= Arel::Table.new("#{table.name}_recursive")
+        # Returns Arel::Table object that represents recursive CTE.
+        def recursive_table
+          @recursive_table ||= Arel::Table.new("#{table.name}__recursive")
         end
+        alias_method :previous, :recursive_table
 
         def build_arel
           recursive_term = super.
-            join(united_term).
-            on(arel_table[recursive_key].eq(united_term[original_key]))
+            join(previous).
+            on(recursive_join_conditions)
 
           union = original_term.union(:all, recursive_term)
 
-          as_stmt = Arel::Nodes::As.new(united_term, union)
+          as_stmt = Arel::Nodes::As.new(recursive_table, union)
 
           Arel::SelectManager.new(Arel::Table.engine).
             with(:recursive, as_stmt).
-            from(united_term).
-            project(united_term[Arel.star])
+            from(recursive_table).
+            project(recursive_table[Arel.star])
         end
 
         private
         def original_term
           # ORDER, LIMIT and OFFSET aren't allowed in non-recursive part of recursive query
-          @current_scope.except(:order, :limit, :offset).arel
+          @start_with_value.except(:order, :limit, :offset).arel
+        end
+
+        private
+        def recursive_join_conditions
+          @join_keys.map do |original_key, recursive_key|
+            table[recursive_key].eq(recursive_table[original_key])
+          end.reduce(:and)
+        end
+
+        # Columns to select in both terms
+        def columns
+          columns = [table[klass.primary_key]] + @join_keys.flatten.map { |key| table[key] }
+          columns.uniq
         end
       end
       private_constant :RecursiveRelation

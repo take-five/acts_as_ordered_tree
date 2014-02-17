@@ -67,7 +67,7 @@ module ActsAsOrderedTree
       def descendants_scope(scope, &block)
         scope.
         extending(Relation::Recursive).
-        recursive_join(columns.id, columns.parent, &block).
+        recursive_join(columns.id => columns.parent, &block).
           start_with do |start|
             start.select(positions_array.as(positions_alias))
           end.
@@ -81,7 +81,7 @@ module ActsAsOrderedTree
       def ancestors_scope(scope, &block)
         traverse = scope.
           extending(Relation::Recursive).
-          recursive_join(columns.parent, columns.id, &block)
+          recursive_join(columns.parent => columns.id, &block)
 
         if columns.depth?
           traverse.start_with { |start| start.select depth }
@@ -89,7 +89,7 @@ module ActsAsOrderedTree
           traverse.reorder depth.asc
         else
           traverse.start_with { |start| start.select Arel.sql('0').as('_depth') }
-          traverse.recursive { |ancestors| ancestors.select Arel.sql('_depth - 1') }
+          traverse.recursive { |ancestors| ancestors.select ancestors.previous['_depth'] - 1 }
           traverse.reorder('_depth ASC')
         end
       end
