@@ -9,8 +9,12 @@ module ActsAsOrderedTree
 
     # Returns true if this is the end of a branch.
     def leaf?
-      # children.size won't execute SQL-queries if counter_cache is set, so it's ok
-      record.persisted? && children.size == 0
+      record.persisted? && if children.loaded? || tree.columns.counter_cache?
+                             # no SQL-queries here
+                             children.empty?
+                           else
+                             !children.exists?
+                           end
     end
 
     # Returns true if node contains any children.
@@ -27,7 +31,9 @@ module ActsAsOrderedTree
     #
     # @param [ActiveRecord::Base] other
     def is_descendant_of?(other)
-      same_scope?(other) && ancestors.include?(other)
+      same_scope?(other) &&
+          ancestors.include?(other) &&
+          ancestors.all? { |x| x.ordered_tree_node.same_scope?(record) }
     end
 
     # Returns true if current node is equal to +other+ node or is descendant of +other+ node.
@@ -58,7 +64,11 @@ module ActsAsOrderedTree
 
     # Return +true+ if this object is the last in the list.
     def last?
-      !right_sibling
+      if tree.columns.counter_cache? && parent
+        parent.children.size == position
+      else
+        !right_sibling
+      end
     end
 
     # Check if other node is in the same scope

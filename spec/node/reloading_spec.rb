@@ -2,9 +2,9 @@
 
 require 'spec_helper'
 
-describe ActsAsOrderedTree::Node, '#reload', :transactional do
+describe ActsAsOrderedTree::Node::Reloading, :transactional do
   shared_examples 'ActsAsOrderedTree::Node#reload' do |model, attrs = {}|
-    describe model do
+    describe model.to_s.camelize, '#reload' do
       let(:record) { create model, attrs }
       let(:node) { record.ordered_tree_node }
 
@@ -29,9 +29,14 @@ describe ActsAsOrderedTree::Node, '#reload', :transactional do
           expect(record.children.size).to eq 0
         end
       end
+
+      it 'does not reload another attributes' do
+        expect{node.reload}.not_to change{record.name}
+      end
     end
   end
 
   include_examples 'ActsAsOrderedTree::Node#reload', :default
   include_examples 'ActsAsOrderedTree::Node#reload', :default_with_counter_cache
+  include_examples 'ActsAsOrderedTree::Node#reload', :scoped
 end

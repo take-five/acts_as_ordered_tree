@@ -15,6 +15,10 @@ module ActsAsOrderedTree
           ordered_tree_node.parent_id_changed? ? super : ordered_tree_node.counter_cache
         end
 
+        def empty?
+          size == 0
+        end
+
         private
         Compatibility.version '< 3.1.0' do
           def ordered_tree_node

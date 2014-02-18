@@ -14,8 +14,8 @@ module RSpec::Matchers
   # it { expect{...}.to query_database.once }
   # it { expect{...}.to query_database.at_most(2).times }
   # it { expect{...}.not_to query_database }
-  def query_database
-    QueryDatabaseMatcher.new
+  def query_database(regexp = nil)
+    QueryDatabaseMatcher.new(regexp)
   end
 
   # example { expect(record1, record2, record3).to be_sorted }
@@ -24,9 +24,10 @@ module RSpec::Matchers
   end
 
   class QueryDatabaseMatcher
-    def initialize
-      @min = 1
+    def initialize(regexp)
+      @min = nil
       @max = nil
+      @regexp = regexp
     end
 
     def times
@@ -60,16 +61,50 @@ module RSpec::Matchers
     def matches?(subject)
       record_queries { subject.call }
 
-      expected_queries_count.include?(@queries.size)
+      result = expected_queries_count.include?(@queries.size)
+      result &&= @queries.any? { |q| @regexp === q } if @regexp
+      result
     end
 
-    def failure_message_for_should
-      "expected given block to query database (#{@min}..#{@max}) times, but #{@queries.size} queries sent"
+    def description
+      desc = 'query database'
+
+      if @min && !@max
+        desc << ' at least ' << human_readable_count(@min)
+      end
+
+      if @max && !@min
+        desc << ' at most ' << human_readable_count(@max)
+      end
+
+      if @min && @max && @min != @max
+        desc << " #{@min}..#{@max} times"
+      end
+
+      if @min && @max && @min == @max
+        desc << ' ' << human_readable_count(@min)
+      end
+
+      if @regexp
+        desc << ' and match ' << @regexp.to_s
+      end
+
+      desc
+    end
+
+    def failure_message_for_should(negative = false)
+      verb = negative ? 'not to' : 'to'
+      message = "expected given block #{verb} #{description}, but #{@queries.size} queries sent"
+
+      if @queries.any?
+        message << ":\n#{@queries.each_with_index.map { |q, i| "#{i+1}. #{q}"}.join("\n")}"
+      end
+
+      message
     end
 
     def failure_message_for_should_not
-      "expected given block to query database, "\
-      "but #{@queries.size} queries sent:\n#{@queries.each_with_index.map { |q, i| "#{i+1}. #{q}"}.join("\n")}"
+      failure_message_for_should(true)
     end
 
     private
@@ -86,7 +121,11 @@ module RSpec::Matchers
     end
 
     def expected_queries_count
-      (@min..@max || 10000)
+      ((@min||1)..@max || 10000)
+    end
+
+    def human_readable_count(n)
+      n == 1 ? 'once' : "#{n} times"
     end
   end
 

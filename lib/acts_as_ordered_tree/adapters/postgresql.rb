@@ -104,10 +104,6 @@ module ActsAsOrderedTree
         attribute(columns.depth)
       end
 
-      def array(*values)
-        Arel::Nodes::PostgresArray.new(values)
-      end
-
       def positions_array
         Arel::Nodes::PostgresArray.new(attribute(columns.position))
       end

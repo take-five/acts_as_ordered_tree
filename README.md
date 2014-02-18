@@ -2,6 +2,7 @@
 WARNING! THIS GEM IS NOT COMPATIBLE WITH <a href="http://ordered-tree.rubyforge.org">ordered_tree gem</a>.
 
 Specify this `acts_as` extension if you want to model an ordered tree structure ([adjacency list hierarchical structure](http://www.sqlsummit.com/AdjacencyList.htm)) by providing a parent association, a children association and a sort column. For proper use you should have a foreign key column, which by default is called `parent_id`, and a sort column, which is by default called `position`.
+Comparison of Adjacency List model to others: http://vadimtropashko.wordpress.com/2008/08/09/one-more-nested-intervals-vs-adjacency-list-comparison/
 
 This extension is mostly compatible with [`awesome_nested_set`](https://github.com/collectiveidea/awesome_nested_set/) gem
 
