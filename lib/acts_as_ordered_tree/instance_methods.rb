@@ -17,7 +17,7 @@ module ActsAsOrderedTree
       persisted? && if children_counter_cache_column
         self[children_counter_cache_column] == 0
       else
-        children.count == 0
+        !children.reorder(nil).exists?
       end
     end
 
