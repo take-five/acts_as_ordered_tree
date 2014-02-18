@@ -29,10 +29,16 @@ module ActsAsOrderedTree
 
     # Returns scope to which record should be applied
     def scope
+      base_class = if record.class.finder_needs_type_condition?
+                     record.class.base_class
+                   else
+                     record.class
+                   end
+
       if tree.columns.scope?
-        record.class.base_class.where Hash[tree.columns.scope.map { |column| [column, record[column]] }]
+        base_class.where Hash[tree.columns.scope.map { |column| [column, record[column]] }]
       else
-        record.class.base_class.where(nil)
+        base_class.where(nil)
       end
     end
 

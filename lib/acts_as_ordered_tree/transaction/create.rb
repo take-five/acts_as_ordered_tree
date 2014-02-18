@@ -13,7 +13,10 @@ module ActsAsOrderedTree
       before :push_to_bottom_after_commit, :if => 'push_to_bottom? && to.root?'
       before :set_counter_cache, :if => 'tree.columns.counter_cache?'
       before :increment_lower_positions, :unless => :push_to_bottom?
+      before 'trigger_callback(:before_add, to.parent)'
+
       after  'to.increment_counter'
+      after  'trigger_callback(:after_add, to.parent)'
 
       private
       def set_counter_cache

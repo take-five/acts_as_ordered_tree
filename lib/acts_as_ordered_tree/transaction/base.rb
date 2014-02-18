@@ -47,6 +47,11 @@ module ActsAsOrderedTree
       def transaction
         @transaction ||= PerseveringTransaction.new(connection)
       end
+
+      # Trigger tree callback (before_add, after_add, before_remove, after_remove)
+      def trigger_callback(kind, owner)
+        tree.callbacks.send(kind, owner, record) if owner.present?
+      end
     end
   end
 end

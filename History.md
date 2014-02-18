@@ -9,6 +9,8 @@ New features:
 * Descendants now can be arranged into hash via `#arrange` method (#22).
 * Flexible control over tree traversals via blocks passed to `#descendants`
   and `#ancestors` (#21)
+* Full support for `before_add`, `after_add`, `before_remove` and `after_remove`
+  callbacks (#25)
 
 Bug fixes:
 

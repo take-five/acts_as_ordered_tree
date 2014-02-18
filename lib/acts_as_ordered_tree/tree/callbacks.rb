@@ -1,17 +1,20 @@
 # coding: utf-8
 
+require 'active_support/core_ext/hash/slice'
+
 module ActsAsOrderedTree
   class Tree
     # Tree callbacks storage
     #
     # @example
-    #   MyModel.ordered_tree.callbacks.before_add? # => false
-    #   MyModel.ordered_tree
+    #   MyModel.ordered_tree.callbacks.before_add(parent, child)
+    #
+    # @api private
     class Callbacks
       VALID_KEYS = :before_add,
-          :after_add,
-          :before_remove,
-          :after_remove
+                   :after_add,
+                   :before_remove,
+                   :after_remove
 
       def initialize(klass, options)
         @klass = klass
@@ -27,17 +30,31 @@ module ActsAsOrderedTree
       end
 
       # generate accessors and predicates
-      VALID_KEYS.each do |k|
-        define_method(k) do |owner, record| # def before_add(parent, record)
-          if @callbacks.key?(k)
-            raise NotImplementedError, "#{k} callbacks not implemented yet"
-          end
+      VALID_KEYS.each do |method|
+        define_method(method) do |parent, record| # def before_add(parent, record)
+          run_callbacks(method, parent, record)
         end
+      end
 
-        # def before_add?() @callbacks.key?(:before_add) end
-        define_method("#{k}?") do
-          @callbacks.key?(k)
+      private
+      def run_callbacks(method, parent, record)
+        callback = callback_for(method)
+
+        case callback
+          when Symbol
+            parent.send(callback, record)
+          when Proc
+            callback.call(parent, record)
+          when nil, false
+            # do nothing
+          else
+            # parent.before_add(record)
+            callback.send(method, parent, record)
         end
+      end
+
+      def callback_for(method)
+        @callbacks[method]
       end
     end # class Callbacks
   end # class Tree

@@ -10,8 +10,11 @@ module ActsAsOrderedTree
 
       attr_reader :from
 
+      before 'trigger_callback(:before_remove, from.parent)'
+
       after :decrement_lower_positions
       after 'from.decrement_counter'
+      after 'trigger_callback(:after_remove, from.parent)'
 
       # @param [ActsAsOrderedTree::Node] node
       # @param [ActsAsOrderedTree::Position] from from which position given +node+ is destroyed
