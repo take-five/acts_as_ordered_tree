@@ -50,13 +50,6 @@ module ActsAsOrderedTree
 
     delegate :level, :to => :ordered_tree_node
 
-    # Returns ordered tree object.
-    #
-    # @return [ActsAsOrderedTree::Tree]
-    def ordered_tree
-      self.class.ordered_tree
-    end
-
     # Returns ordered tree node - an object which maintains tree integrity.
     # WARNING: THIS METHOD IS NOT THREAD SAFE!
     # Though I'm not sure if it can cause any problems.

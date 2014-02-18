@@ -5,14 +5,15 @@ require 'acts_as_ordered_tree/compatibility'
 require 'acts_as_ordered_tree/tree/callbacks'
 require 'acts_as_ordered_tree/tree/columns'
 require 'acts_as_ordered_tree/tree/children_association'
+require 'acts_as_ordered_tree/tree/deprecated_columns_accessors'
 require 'acts_as_ordered_tree/tree/parent_association'
+require 'acts_as_ordered_tree/tree/perseverance'
 require 'acts_as_ordered_tree/tree/scopes'
 
 require 'acts_as_ordered_tree/adapters'
 require 'acts_as_ordered_tree/validators'
 
 require 'acts_as_ordered_tree/instance_methods'
-require 'acts_as_ordered_tree/perseverance'
 
 module ActsAsOrderedTree
   # ActsAsOrderedTree::Tree
@@ -50,6 +51,15 @@ module ActsAsOrderedTree
     #   @return [Hash]
     attr_reader :options
 
+    # Create and setup tree object
+    #
+    # @param [Class] klass
+    # @param [Hash] options
+    def self.setup!(klass, options)
+      klass.ordered_tree = new(klass, options)
+      klass.ordered_tree.setup
+    end
+
     # @param [Class] klass
     # @param [Hash] options
     def initialize(klass, options)
@@ -74,11 +84,14 @@ module ActsAsOrderedTree
       include Scopes
       include InstanceMethods
       include Perseverance
+      klass.extend DeprecatedColumnsAccessors
+
+      @setup = true
     end
 
     private
     def already_setup?
-      @klass.method_defined?(:ordered_tree) && @klass.ordered_tree.present?
+      @klass.ordered_tree? && @klass.ordered_tree.instance_variable_get(:@setup)
     end
 
     def setup_associations
