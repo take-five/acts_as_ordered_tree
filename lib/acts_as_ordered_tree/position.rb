@@ -133,7 +133,7 @@ module ActsAsOrderedTree
     # @param [ActsAsOrderedTree::Node::Position] other
     def ==(other)
       other.is_a?(self.class) &&
-          other.node == node &&
+          other.record == record &&
           other.parent_id == parent_id &&
           other.position == position
     end

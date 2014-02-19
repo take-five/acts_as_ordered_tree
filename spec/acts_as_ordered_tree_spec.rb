@@ -232,16 +232,6 @@ describe ActsAsOrderedTree, :transactional do
     let!(:child_3) { create :default_with_counter_cache, :parent => root, :name => 'child_3' }
     let!(:child_4) { create :default_with_counter_cache, :parent => child_3, :name => 'child_4' }
 
-    context "initial" do
-      specify { expect([child_1, child_2, child_3]).to be_sorted }
-
-      subject { root.reload }
-      its(:parent_id) { should be_nil }
-      its(:level) { should be_zero }
-      its(:position) { should eq 1 }
-      its(:categories_count) { should eq 3}
-    end
-
     describe "#insert_at" do
       before { ActiveSupport::Deprecation.silence { child_3.insert_at(1) } }
       before { child_3.reload }
@@ -251,31 +241,6 @@ describe ActsAsOrderedTree, :transactional do
 
     describe "callbacks" do
       subject { child_3 }
-
-      it { should fire_callback(:before_move).when_calling(:move_to_root).once }
-      it { should fire_callback(:after_move).when_calling(:move_to_root).once }
-      it { should fire_callback(:around_move).when_calling(:move_to_root).once }
-
-      it { should_not fire_callback(:before_move).when_calling(:move_left) }
-      it { should_not fire_callback(:after_move).when_calling(:move_left) }
-      it { should_not fire_callback(:around_move).when_calling(:move_left) }
-
-      it { should fire_callback(:before_reorder).when_calling(:move_higher).once }
-      it { should fire_callback(:after_reorder).when_calling(:move_higher).once }
-
-      it { should_not fire_callback(:before_reorder).when_calling(:move_to_root) }
-
-      it "should cache depth on save" do
-        record = build :default_with_counter_cache
-
-        record.depth.should be_nil
-        record.save
-
-        record.depth.should eq 0
-
-        record.move_to_left_of child_3
-        record.depth.should eq child_3.level
-      end
 
       it "should recalculate depth of descendants" do
         record = create :default_with_counter_cache, :parent => child_3
@@ -297,24 +262,6 @@ describe ActsAsOrderedTree, :transactional do
 
         record.reload.depth.should eq 3
       end
-
-      context "DefaultWithCallbacks" do
-        let!(:cb_root_1) { create :default_with_callbacks, :name => 'root_1' }
-        let!(:cb_root_2) { create :default_with_callbacks, :name => 'root_2' }
-        let!(:cb_child_1) { create :default_with_callbacks, :name => 'child_1', :parent => cb_root_1 }
-        let!(:cb_child_2) { create :default_with_callbacks, :name => 'child_2', :parent => cb_root_1 }
-
-        specify "new parent_id should be available in before_move" do
-          cb_root_2.stub(:before_move) { cb_root_2.parent_id.should eq cb_root_1.id }
-          cb_root_2.move_to_left_of cb_child_1
-        end
-
-        specify "new position should be available in before_reorder" do
-          cb_child_2.stub(:before_reorder) { cb_child_2.position.should eq 1 }
-          cb_child_2.move_to_left_of cb_child_1
-        end
-      end
-
     end
 
     context "changed attributes" do
@@ -387,19 +334,6 @@ describe ActsAsOrderedTree, :transactional do
         before { root.parent = grandchild }
 
         it { should have_at_least(1).error_on(:parent) }
-      end
-    end
-
-    describe "attempt to create node with wrong position" do
-      it "should not throw error" do
-        expect{ create :default, :position => 22 }.not_to raise_error
-      end
-
-      it "should be saved at proper position" do
-        root = create :default
-
-        node = create :default, :position => 2
-        node.position.should eq 2
       end
     end
   end
