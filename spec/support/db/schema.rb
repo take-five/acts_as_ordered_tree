@@ -20,4 +20,13 @@ ActiveRecord::Schema.define(:version => 0) do
     t.column :parent_id, :integer
     t.column :position, :integer
   end
+
+  create_table :sti_examples, :force => true do |t|
+    t.column :type, :string, :null => false
+    t.column :name, :string
+    t.column :parent_id, :integer
+    t.column :position, :integer
+    t.column :depth, :integer
+    t.column :children_count, :integer
+  end
 end

@@ -29,3 +29,7 @@ class Scoped < ActiveRecord::Base
 
   acts_as_ordered_tree :scope => :scope_type
 end
+
+class StiExample < ActiveRecord::Base
+  acts_as_ordered_tree :counter_cache => :children_count
+end

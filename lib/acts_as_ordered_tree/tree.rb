@@ -89,6 +89,18 @@ module ActsAsOrderedTree
       @setup = true
     end
 
+    # Returns Class object which will be used for associations,
+    # scopes and tree traversals.
+    #
+    # @return [Class]
+    def base_class
+      if klass.finder_needs_type_condition?
+        klass.base_class
+      else
+        klass
+      end
+    end
+
     private
     def already_setup?
       @klass.ordered_tree? && @klass.ordered_tree.instance_variable_get(:@setup)

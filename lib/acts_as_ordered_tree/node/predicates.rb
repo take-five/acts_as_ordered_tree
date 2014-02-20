@@ -71,13 +71,19 @@ module ActsAsOrderedTree
       end
     end
 
-    # Check if other node is in the same scope
+    # Check if other node is in the same scope.
     #
     # @api private
     def same_scope?(other)
-      other.class == record.class && tree.columns.scope.all? do |attr|
+      same_kind?(other) && tree.columns.scope.all? do |attr|
         record[attr] == other[attr]
       end
+    end
+
+    private
+    # Check if other node belongs to same class hierarchy.
+    def same_kind?(other)
+      other.ordered_tree && other.ordered_tree.base_class == tree.base_class
     end
   end
 end

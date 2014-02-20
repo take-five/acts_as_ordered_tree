@@ -13,11 +13,7 @@ module ActsAsOrderedTree
 
       protected
       def class_name
-        if klass.finder_needs_type_condition?
-          "::#{klass.base_class.name}"
-        else
-          "::#{klass.name}"
-        end
+        "::#{tree.base_class.name}"
       end
     end # class Association
   end # class Tree

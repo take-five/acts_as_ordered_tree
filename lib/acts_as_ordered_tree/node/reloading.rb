@@ -16,20 +16,23 @@ module ActsAsOrderedTree
         # Reloads node's attributes related to tree structure
         def reload(options = {})
           record.association_cache.delete(:parent)
+          record.association_cache.delete(:children)
 
-          scope = record.class.unscoped.select(tree_columns)
-
-          fresh_object =
-              if options && options[:lock]
-                scope.lock.find(record.id)
-              else
-                scope.find(record.id)
-              end
+          fresh_object = reload_scope(options).find(record.id)
 
           record.instance_eval do
             @attributes.update(fresh_object.instance_variable_get(:@attributes))
             @attributes_cache = {}
           end
+
+          record
+        end
+
+        private
+        def reload_scope(options)
+          options ||= {}
+          lock_value = options.fetch(:lock, false)
+          record.class.unscoped.select(tree_columns).lock(lock_value)
         end
       end
 

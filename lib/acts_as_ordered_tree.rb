@@ -7,11 +7,6 @@ module ActsAsOrderedTree
   # @!attribute [r] ordered_tree
   #   @return [ActsAsOrderedTree::Tree] ordered tree object
 
-  # @api private
-  def self.extended(base)
-    base.class_attribute :ordered_tree, :instance_writer => false
-  end
-
   # == Usage
   #   class Category < ActiveRecord::Base
   #     acts_as_ordered_tree :parent_column => :parent_id,
@@ -21,6 +16,23 @@ module ActsAsOrderedTree
   #   end
   def acts_as_ordered_tree(options = {})
     Tree.setup!(self, options)
+  end
+
+  # @api private
+  def self.extended(base)
+    base.class_attribute :ordered_tree, :instance_writer => false
+  end
+
+  # Rebuild ordered tree structure for subclasses. It needs to be rebuilt
+  # mainly because of :children and :parent associations, which are created
+  # with option :class_name. It matters for class hierarchies without STI,
+  # they can't work properly with associations inherited from superclass.
+  #
+  # @api private
+  def inherited(subclass)
+    subclass.acts_as_ordered_tree(ordered_tree.options) if ordered_tree?
+
+    super
   end
 end # module ActsAsOrderedTree
 
