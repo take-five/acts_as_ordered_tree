@@ -16,7 +16,7 @@ Gem::Specification.new do |s|
   s.test_files    = `git ls-files -- spec/* features/*`.split("\n")
   s.require_paths = %w(lib)
 
-  s.add_dependency 'activerecord', '>= 3.0.0'
+  s.add_dependency 'activerecord', '>= 3.1.0'
 
   s.add_development_dependency 'rake', '>= 0.9.2'
   s.add_development_dependency 'bundler', '>= 1.0'

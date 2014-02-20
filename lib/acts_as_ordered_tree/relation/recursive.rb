@@ -137,19 +137,6 @@ module ActsAsOrderedTree
         end
       end
 
-      Compatibility.version('< 3.1.0') do
-        # for rails 3.0 only: same trick as with #update_all
-        #
-        # @api private
-        def calculate(*args)
-          if recursive_join_value
-            with_subquery.calculate(*args)
-          else
-            super
-          end
-        end
-      end
-
       # @api private
       def build_arel
         if recursive_join_value

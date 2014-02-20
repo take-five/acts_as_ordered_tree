@@ -1,14 +1,5 @@
-appraise 'rails3.0' do
-  gem 'activerecord', '~> 3.0.0'
-
-  gem 'activerecord-jdbcpostgresql-adapter', '~> 1.2.2', :platform => :jruby
-  gem 'activerecord-jdbcsqlite3-adapter', '~> 1.2.2', :platform => :jruby
-  gem 'activerecord-jdbcmysql-adapter', '~> 1.2.2', :platform => :jruby
-  gem 'activerecord-mysql2-adapter', :platform => :ruby
-end
-
 appraise 'rails3.1' do
-  gem 'activerecord', '~> 3.1.0'
+  gem 'activerecord', '~> 3.1.12'
 
   gem 'activerecord-jdbcpostgresql-adapter', '~> 1.2.2', :platform => :jruby
   gem 'activerecord-jdbcsqlite3-adapter', '~> 1.2.2', :platform => :jruby
@@ -16,7 +7,7 @@ appraise 'rails3.1' do
 end
 
 appraise 'rails3.2' do
-  gem 'activerecord', '~> 3.2.0'
+  gem 'activerecord', '~> 3.2.17'
 
   gem 'activerecord-jdbcpostgresql-adapter', '~> 1.2.2', :platform => :jruby
   gem 'activerecord-jdbcsqlite3-adapter', '~> 1.2.2', :platform => :jruby
@@ -24,7 +15,7 @@ appraise 'rails3.2' do
 end
 
 appraise 'rails4.0' do
-  gem 'activerecord', '~> 4.0.0'
+  gem 'activerecord', '~> 4.0.2'
 
   gem 'activerecord-jdbcpostgresql-adapter', '~> 1.3.0', :platform => :jruby
   gem 'activerecord-jdbcsqlite3-adapter', '~> 1.3.0', :platform => :jruby
@@ -32,7 +23,7 @@ appraise 'rails4.0' do
 end
 
 appraise 'rails4.1' do
-  gem 'activerecord', '~> 4.1.0.beta1'
+  gem 'activerecord', '~> 4.1.0.rc1'
 
   gem 'activerecord-jdbc-adapter', :github => 'jruby/activerecord-jdbc-adapter', :platform => :jruby
   gem 'activerecord-jdbcpostgresql-adapter', :github => 'jruby/activerecord-jdbc-adapter', :platform => :jruby
