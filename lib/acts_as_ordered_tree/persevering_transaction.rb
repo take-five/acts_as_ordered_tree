@@ -8,15 +8,13 @@ module ActsAsOrderedTree
       #
       # @api private
       def state_method(state)
-        class_eval <<-RUBY, __FILE__, __LINE__ + 1
-          def #{state}!(*)
-            @state = #{state.to_sym.inspect}
-          end
+        define_method "#{state}!" do |*|
+          @state = state
+        end
 
-          def #{state}?
-            @state == #{state.to_sym.inspect}
-          end
-        RUBY
+        define_method "#{state}?" do
+          @state == state
+        end
       end
     end
     extend State

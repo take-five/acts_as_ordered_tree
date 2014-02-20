@@ -19,6 +19,8 @@ module ActsAsOrderedTree
     module Attributes
       extend ActiveSupport::Concern
 
+      SUFFIXES = ['', '?',  ?=, '_was', '_changed?'].freeze
+
       included do
         dynamic_attribute_accessor :position
         dynamic_attribute_accessor :parent_id, :parent
@@ -31,29 +33,15 @@ module ActsAsOrderedTree
         #
         # @api private
         def dynamic_attribute_accessor(name, column_name_accessor = name)
-          class_eval <<-ERUBY, __FILE__, __LINE__ + 1
-            def #{name}
-              record.send(record.ordered_tree.columns.#{column_name_accessor})
-            end
+          SUFFIXES.each do |suffix|
+            method_name = "#{name}#{suffix}"
 
-            def #{name}?
-              record.send("#\{record.ordered_tree.columns.#{column_name_accessor}}?")
+            define_method method_name do |*args|
+              record.send "#{tree.columns[column_name_accessor]}#{suffix}", *args
             end
-
-            def #{name}=(value)
-              record.send("#\{record.ordered_tree.columns.#{column_name_accessor}}=", value)
-            end
-
-            def #{name}_was
-              record.send("#\{record.ordered_tree.columns.#{column_name_accessor}}_was")
-            end
-
-            def #{name}_changed?
-              record.send("#\{record.ordered_tree.columns.#{column_name_accessor}}_changed?")
-            end
-          ERUBY
+          end
         end
-      end
-    end
-  end
-end
+      end # module ClassMethods
+    end # module Attributes
+  end # class Node
+end # module ActsAsOrderedTree

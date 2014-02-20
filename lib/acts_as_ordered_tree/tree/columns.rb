@@ -15,20 +15,18 @@ module ActsAsOrderedTree
       # @api private
       def self.column_accessor(*names)
         names.each do |name|
-          class_eval <<-ERUBY, __FILE__, __LINE__ + 1
-            def #{name}=(value)
-              @columns[:#{name}] = value.to_s if column_exists?(value)
-            end
-            private :#{name}=
+          define_method "#{name}=" do |value|
+            @columns[name] = value.to_s if column_exists?(value)
+          end
+          private "#{name}=".to_sym
 
-            def #{name}?
-              @columns.key?(:#{name}) && #{name}.present?
-            end
+          define_method "#{name}?" do
+            @columns[name].present?
+          end
 
-            def #{name}
-              @columns[:#{name}]
-            end
-          ERUBY
+          define_method name do
+            @columns[name]
+          end
         end
       end
 
@@ -61,6 +59,10 @@ module ActsAsOrderedTree
         self.depth = options[:depth_column]
         self.counter_cache = counter_cache_name(options[:counter_cache])
         self.scope = options[:scope]
+      end
+
+      def [](name)
+        @columns[name]
       end
 
       def id
