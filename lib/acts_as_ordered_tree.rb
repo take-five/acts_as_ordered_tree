@@ -30,9 +30,9 @@ module ActsAsOrderedTree
   #
   # @api private
   def inherited(subclass)
-    subclass.acts_as_ordered_tree(ordered_tree.options) if ordered_tree?
-
     super
+
+    subclass.acts_as_ordered_tree(ordered_tree.options) if ordered_tree?
   end
 end # module ActsAsOrderedTree
 

@@ -68,7 +68,7 @@ module ActsAsOrderedTree
 
         recursive(&block)
 
-        self.where_values = []
+        self.where_values = default_scope_values
         self.limit_value = nil
         self.offset_value = nil
 
@@ -119,11 +119,23 @@ module ActsAsOrderedTree
         @values ? @values[:recursive_join] = value : @recursive_join_value = value
       end
 
-      # @api private
-      def with_default_scope
-        relation = super
-        relation.recursive_join_value = recursive_join_value
-        relation
+      Compatibility.version '< 4.1.0' do
+        # @api private
+        def with_default_scope
+          relation = super
+          relation.recursive_join_value = recursive_join_value
+          relation
+        end
+
+        def default_scope_values
+          []
+        end
+      end
+
+      Compatibility.version '>= 4.1.0' do
+        def default_scope_values
+          klass.default_scoped.where_values
+        end
       end
 
       # Here we override original method, because update with join to recursive CTE
