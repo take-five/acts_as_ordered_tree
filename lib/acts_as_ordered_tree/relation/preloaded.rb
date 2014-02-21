@@ -28,7 +28,9 @@ module ActsAsOrderedTree
       end
 
       def reverse_order!
-        @records.reverse!
+        @records = @records.reverse
+
+        self
       end
 
       # Extending relation is not really intrusive operation, so we can save preloaded records

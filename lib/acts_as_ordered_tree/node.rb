@@ -28,6 +28,8 @@ module ActsAsOrderedTree
     end
 
     # Returns scope to which record should be applied
+    #
+    # @todo apply with_default_scope here
     def scope
       if tree.columns.scope?
         tree.base_class.where Hash[tree.columns.scope.map { |column| [column, record[column]] }]

@@ -64,10 +64,10 @@ module ActsAsOrderedTree
       #
       # @api private
       module StartWith
-        def start_with(&block)
-          return self unless @start_record && block
+        def start_with(scope = nil, &block)
+          return self unless @start_record && (scope || block)
 
-          scope = block.call(where(klass.primary_key => @start_record.id))
+          scope ||= block.call(where(klass.primary_key => @start_record.id))
 
           if scope.exists?
             self

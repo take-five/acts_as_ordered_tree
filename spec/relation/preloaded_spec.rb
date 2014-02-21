@@ -39,5 +39,19 @@ describe ActsAsOrderedTree::Relation::Preloaded, :transactional do
       it { expect(extended.size).to eq 2 }
       it { expect{extended.size}.not_to query_database }
     end
+
+    describe '#reverse_order' do
+      it { expect(preloaded.reverse_order).not_to be preloaded }
+      it { expect(preloaded.reverse_order.size).to eq 2 }
+      it { expect(preloaded.reverse_order).to eq records.reverse }
+      it { expect{preloaded.reverse_order.to_a}.not_to query_database }
+    end
+
+    describe '#reverse_order!' do
+      it { expect(preloaded.reverse_order!).to be preloaded }
+      it { expect(preloaded.reverse_order!.size).to eq 2 }
+      it { expect(preloaded.reverse_order!.to_a).to eq records.reverse }
+      it { expect{preloaded.reverse_order!.to_a}.not_to query_database }
+    end
   end
 end

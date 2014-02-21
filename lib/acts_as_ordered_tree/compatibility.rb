@@ -9,11 +9,15 @@ module ActsAsOrderedTree
   # @api private
   module Compatibility
     features do
-      scope 'active_record/associations' do
-        feature :association, :versions => ['>= 3.1.0', '< 4.0.0']
+      scope :active_record do
+        versions '< 4.0.0' do
+          feature :association_scope
+          feature :null_relation
+        end
+
+        feature :default_scoped, '< 4.1.0'
       end
 
-      feature 'active_record/null_relation', '< 4.0.0'
       feature 'arel/nodes/postgres_array', '>= 3.1.0'
     end
   end

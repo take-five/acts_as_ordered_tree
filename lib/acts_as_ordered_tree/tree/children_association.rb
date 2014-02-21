@@ -20,16 +20,8 @@ module ActsAsOrderedTree
         end
 
         private
-        Compatibility.version '< 3.1.0' do
-          def ordered_tree_node
-            @owner.ordered_tree_node
-          end
-        end
-
-        Compatibility.version '>= 3.1.0' do
-          def ordered_tree_node
-            @association.owner.ordered_tree_node
-          end
+        def ordered_tree_node
+          @association.owner.ordered_tree_node
         end
       end
 

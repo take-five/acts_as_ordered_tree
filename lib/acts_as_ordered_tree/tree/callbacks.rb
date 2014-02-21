@@ -25,10 +25,6 @@ module ActsAsOrderedTree
         end
       end
 
-      def to_h
-        @callbacks.dup
-      end
-
       # generate accessors and predicates
       VALID_KEYS.each do |method|
         define_method(method) do |parent, record| # def before_add(parent, record)

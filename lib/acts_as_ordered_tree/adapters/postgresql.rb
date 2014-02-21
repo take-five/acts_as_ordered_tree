@@ -15,7 +15,7 @@ module ActsAsOrderedTree
 
       def self_and_descendants(node, &block)
         traverse_down(node) do
-          descendants_scope(node.ordered_tree_node.to_relation, &block)
+          descendants_scope(node.ordered_tree_node, &block)
         end
       end
 
@@ -28,7 +28,7 @@ module ActsAsOrderedTree
 
       def self_and_ancestors(node, &block)
         traverse_up(node, [node]) do
-          ancestors_scope(node.ordered_tree_node.to_relation, &block)
+          ancestors_scope(node.ordered_tree_node, &block)
         end
       end
 
@@ -66,32 +66,35 @@ module ActsAsOrderedTree
       end
 
       # Generates scope that traverses tree down to deep, starting from given +scope+
-      def descendants_scope(scope, &block)
-        scope.
+      def descendants_scope(node, &block)
+        node.scope.
         extending(Relation::Recursive).
-        recursive_join(scope_columns_hash.merge(columns.id => columns.parent), &block).
-          start_with do |start|
+        connect_by(scope_columns_hash.merge(columns.id => columns.parent)).
+          start_with(node.to_relation) do |start|
             start.select(positions_array.as(positions_alias))
           end.
-          recursive do |descendants|
+          with_recursive do |descendants|
             descendants.select(positions_array.prepend(positions_alias))
           end.
+          with_recursive(&block).
         reorder("#{positions_alias} ASC")
       end
 
       # Generates scope that traverses tree up to root, starting from given +scope+
-      def ancestors_scope(scope, &block)
-        traverse = scope.
+      def ancestors_scope(node, &block)
+        traverse = node.scope.
           extending(Relation::Recursive).
-          recursive_join(scope_columns_hash.merge(columns.parent => columns.id), &block)
+          connect_by(scope_columns_hash.merge(columns.parent => columns.id)).
+          start_with(node.to_relation).
+          with_recursive(&block)
 
         if columns.depth?
           traverse.start_with { |start| start.select depth }
-          traverse.recursive { |ancestors| ancestors.select depth }
+          traverse.with_recursive { |ancestors| ancestors.select depth }
           traverse.reorder depth.asc
         else
           traverse.start_with { |start| start.select Arel.sql('0').as('_depth') }
-          traverse.recursive { |ancestors| ancestors.select ancestors.previous['_depth'] - 1 }
+          traverse.with_recursive { |ancestors| ancestors.select ancestors.previous['_depth'] - 1 }
           traverse.reorder('_depth ASC')
         end
       end
