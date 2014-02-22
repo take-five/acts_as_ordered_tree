@@ -7,7 +7,7 @@ require 'acts_as_ordered_tree/adapters/postgresql'
 module ActsAsOrderedTree
   module Adapters
     # adapters map
-    ADAPTERS = HashWithIndifferentAccess[:PostgreSQL => PostgreSQL]
+    ADAPTERS = HashWithIndifferentAccess['PostgreSQL' => PostgreSQL]
     ADAPTERS.default = Recursive
 
     def self.lookup(name)
