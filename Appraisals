@@ -17,16 +17,15 @@ end
 appraise 'rails4.0' do
   gem 'activerecord', '~> 4.0.2'
 
-  gem 'activerecord-jdbcpostgresql-adapter', '~> 1.3.0', :platform => :jruby
-  gem 'activerecord-jdbcsqlite3-adapter', '~> 1.3.0', :platform => :jruby
-  gem 'activerecord-jdbcmysql-adapter', '~> 1.3.0', :platform => :jruby
+  gem 'activerecord-jdbcpostgresql-adapter', '~> 1.3.6', :platform => :jruby
+  gem 'activerecord-jdbcsqlite3-adapter', '~> 1.3.6', :platform => :jruby
+  gem 'activerecord-jdbcmysql-adapter', '~> 1.3.6', :platform => :jruby
 end
 
 appraise 'rails4.1' do
   gem 'activerecord', '~> 4.1.0.rc1'
 
-  gem 'activerecord-jdbc-adapter', :github => 'jruby/activerecord-jdbc-adapter', :platform => :jruby
-  gem 'activerecord-jdbcpostgresql-adapter', :github => 'jruby/activerecord-jdbc-adapter', :platform => :jruby
-  gem 'activerecord-jdbcsqlite3-adapter', :github => 'jruby/activerecord-jdbc-adapter', :platform => :jruby
-  gem 'activerecord-jdbcmysql-adapter', :github => 'jruby/activerecord-jdbc-adapter', :platform => :jruby
+  gem 'activerecord-jdbcpostgresql-adapter', '~> 1.3.6', :platform => :jruby
+  gem 'activerecord-jdbcsqlite3-adapter', '~> 1.3.6', :platform => :jruby
+  gem 'activerecord-jdbcmysql-adapter', '~> 1.3.6', :platform => :jruby
 end
