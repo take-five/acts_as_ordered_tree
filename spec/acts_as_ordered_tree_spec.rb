@@ -7,45 +7,6 @@ describe ActsAsOrderedTree, :transactional do
     }.should_not raise_exception
   end
 
-  describe ".roots" do
-    # create fixture
-    before { FactoryGirl.create_list(:default, 3) }
-
-    subject { Default.roots }
-
-    its(:entries) { should eq Default.where(:parent_id => nil).order(:position).to_a }
-  end
-
-  describe ".leaves" do
-    # create fixture
-    let(:root) { create :default_with_counter_cache }
-    before { create_list :default_with_counter_cache, 2, :parent => root }
-
-    subject { DefaultWithCounterCache }
-
-    it { should respond_to(:leaves) }
-    its(:leaves) { should have(2).items }
-  end
-
-  describe ".root" do
-    # create fixture
-    let!(:root) { create :default }
-
-    context "given a single root node" do
-      subject { root }
-
-      its(:position) { should eq 1 }
-    end
-
-    context "given multiple root nodes" do
-      before { create_list :default, 3 }
-
-      subject { Default }
-
-      its(:root) { should eq root }
-    end
-  end
-
   describe "#level" do
     context "given a persistent root node" do
       subject { create :default }

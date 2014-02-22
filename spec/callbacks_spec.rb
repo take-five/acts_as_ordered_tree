@@ -150,7 +150,8 @@ describe ActsAsOrderedTree, 'before/after add/remove callbacks', :transactional 
   describe '*_reorder callbacks' do
     it 'fires *_reorder callbacks when node position is changed but parent not' do
       expect {
-        child2.move_lower
+        child2.position += 1
+        child2.save
       }.to trigger_callbacks(:before_reorder, :after_reorder).with(child2)
     end
 

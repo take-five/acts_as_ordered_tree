@@ -56,8 +56,7 @@ module ActsAsOrderedTree
     # @param [Class] klass
     # @param [Hash] options
     def self.setup!(klass, options)
-      klass.ordered_tree = new(klass, options)
-      klass.ordered_tree.setup
+      klass.ordered_tree = new(klass, options).setup
     end
 
     # @param [Class] klass
@@ -75,18 +74,10 @@ module ActsAsOrderedTree
 
     # Builds associations, callbacks, validations etc.
     def setup
-      return if already_setup?
-
       setup_associations
-      setup_validations
-      setup_callbacks
-      protect_attributes columns.parent, columns.position
-      include Scopes
-      include InstanceMethods
-      include Perseverance
-      klass.extend DeprecatedColumnsAccessors
+      setup_once
 
-      @setup = true
+      self
     end
 
     # Returns Class object which will be used for associations,
@@ -103,7 +94,19 @@ module ActsAsOrderedTree
 
     private
     def already_setup?
-      @klass.ordered_tree? && @klass.ordered_tree.instance_variable_get(:@setup)
+      klass.ordered_tree?
+    end
+
+    def setup_once
+      return if already_setup?
+
+      setup_validations
+      setup_callbacks
+      protect_attributes columns.parent, columns.position
+      include Scopes
+      include InstanceMethods
+      include Perseverance
+      klass.extend DeprecatedColumnsAccessors
     end
 
     def setup_associations

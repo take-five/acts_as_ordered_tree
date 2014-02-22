@@ -11,9 +11,17 @@ module ActsAsOrderedTree
         scope :preorder, -> { order(arel_table[ordered_tree.columns.position].asc) }
         scope :roots, -> { where(arel_table[ordered_tree.columns.parent].eq(nil)).preorder }
 
-        # add +leaves+ scope only if counter_cache column present
-        scope :leaves, -> { where(arel_table[ordered_tree.columns.counter_cache].eq(0)) } if
-            ordered_tree.columns.counter_cache?
+        # Returns all nodes that do not have any children. May be quite inefficient.
+        #
+        # @return [ActiveRecord::Relation]
+        scope :leaves, -> {
+          unless ordered_tree.columns.counter_cache?
+            raise NotImplementedError, '.leaves scope requires counter_cache column, '\
+                                       'at least in acts_as_ordered_tree 2.0'
+          end
+
+          where(arel_table[ordered_tree.columns.counter_cache].eq(0))
+        }
 
         # Returns the first root
         #

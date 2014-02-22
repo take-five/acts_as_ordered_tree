@@ -63,6 +63,14 @@ describe ActsAsOrderedTree, 'inheritance without STI', :transactional do
 
       it { expect(node.ancestors).to be_of klass }
     end
+
+    describe "#{klass.name} tree validators" do
+      it 'calls validators only once' do
+        expect_any_instance_of(ActsAsOrderedTree::Validators::CyclicReferenceValidator).to receive(:validate).once
+
+        child_1.becomes(klass).save
+      end
+    end
   end
 
   include_examples 'Inheritance test', BaseCategory
