@@ -53,16 +53,40 @@ module ActsAsOrderedTree
         :parent unless tree.options[:polymorphic]
       end
 
+      # rails 4.x scope for has_many association
       def scope
-        tree = self.tree
+        assoc_scope = method(:association_scope)
+        join_scope = method(:join_association_scope)
 
-        ->(parent) { parent.ordered_tree_node.scope.order(tree.columns.position) }
+        ->(join_or_parent) {
+          if join_or_parent.is_a?(ActiveRecord::Associations::JoinDependency::JoinAssociation)
+            join_scope[join_or_parent]
+          elsif join_or_parent.is_a?(ActiveRecord::Base)
+            assoc_scope[join_or_parent]
+          else
+            where(nil)
+          end
+        }
       end
 
-      # Generate :conditions options for Rails 3.x
+      # Rails 3.x :conditions options for has_many association
       def conditions
-        assoc_scope = scope
-        proc { assoc_scope[self].where_values.reduce(:and).try(:to_sql) }
+        return nil unless tree.columns.scope?
+
+        assoc_scope = method(:association_scope)
+        join_scope = method(:join_association_scope)
+
+        Proc.new do |join_association|
+          conditions = if join_association.is_a?(ActiveRecord::Associations::JoinDependency::JoinAssociation)
+            join_scope[join_association]
+          elsif self.is_a?(ActiveRecord::Base)
+            assoc_scope[self]
+          else
+            where(nil)
+          end.where_values.reduce(:and)
+
+          conditions.try(:to_sql)
+        end
       end
 
       def order
@@ -73,6 +97,22 @@ module ActsAsOrderedTree
         if tree.columns.counter_cache?
           CounterCache
         end
+      end
+
+      def join_association_scope(join_association)
+        parent = join_association.respond_to?(:parent) ?
+            join_association.parent.table :
+            join_association.base_klass.arel_table
+
+        child = join_association.table
+
+        conditions = tree.columns.scope.map { |column| parent[column].eq child[column] }.reduce(:and)
+
+        klass.unscoped.where(conditions)
+      end
+
+      def association_scope(owner)
+        owner.ordered_tree_node.scope.order(tree.columns.position)
       end
     end # class ChildrenAssociation
   end # class Tree
