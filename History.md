@@ -11,6 +11,7 @@ New features:
   and `#ancestors` (#21).
 * Full support for `before_add`, `after_add`, `before_remove` and `after_remove`
   callbacks (#25).
+* `.leaves` scope now works even with models that don't have `counter_cache` column (#29).
 
 Bug fixes:
 

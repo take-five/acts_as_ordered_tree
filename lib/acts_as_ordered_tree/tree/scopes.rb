@@ -28,12 +28,29 @@ module ActsAsOrderedTree
       #
       # @return [ActiveRecord::Relation]
       def leaves
-        unless ordered_tree.columns.counter_cache?
-          raise NotImplementedError, '.leaves scope requires counter_cache column, '\
-                                       'at least in acts_as_ordered_tree 2.0'
+        if ordered_tree.columns.counter_cache?
+          leaves_with_counter_cache
+        else
+          leaves_without_counter_cache
         end
+      end
 
-        where(arel_table[ordered_tree.columns.counter_cache].eq(0))
+      private
+      def leaves_without_counter_cache
+        aliaz = Arel::Nodes::TableAlias.new(arel_table, 't')
+
+        # @todo inspect generated query in Rails 3.x
+        subquery = default_scoped.select('1').
+            from(aliaz).
+            where(aliaz[ordered_tree.columns.parent].eq(arel_table[primary_key])).
+            limit(1).
+            reorder(nil)
+
+        where "NOT EXISTS (#{subquery.to_sql})"
+      end
+
+      def leaves_with_counter_cache
+        where arel_table[ordered_tree.columns.counter_cache].eq 0
       end
     end # module Scopes
   end # class Tree

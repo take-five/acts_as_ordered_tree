@@ -18,6 +18,11 @@ describe ActsAsOrderedTree::Tree::Scopes, :transactional do
     describe model do
       include_context 'ActsAsOrderedTree scopes tree', model, attrs
 
+      describe '.leaves' do
+        it { expect(klass.leaves.order(:id)).to eq [grandchild_1, grandchild_2] }
+        it { expect(root_1.descendants.leaves).to eq [grandchild_1] }
+      end
+
       describe '.roots' do
         it { expect(klass.roots).to eq [root_1, root_2] }
       end
@@ -29,12 +34,6 @@ describe ActsAsOrderedTree::Tree::Scopes, :transactional do
   end
 
   include_examples 'ActsAsOrderedTree scopes', :default
-  include_examples 'ActsAsOrderedTree scopes', :default_with_counter_cache do
-    describe '.leaves' do
-      include_context 'ActsAsOrderedTree scopes tree', :default_with_counter_cache
-
-      it { expect(DefaultWithCounterCache.leaves.order(:id)).to eq [grandchild_1, grandchild_2] }
-      it { expect(root_1.descendants.leaves).to eq [grandchild_1] }
-    end
-  end
+  include_examples 'ActsAsOrderedTree scopes', :default_with_counter_cache
+  include_examples 'ActsAsOrderedTree scopes', :scoped
 end
