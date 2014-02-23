@@ -69,7 +69,6 @@ module ActsAsOrderedTree
       @children = ChildrenAssociation.new(self)
       @parent = ParentAssociation.new(self)
       @adapter = Adapters.lookup(klass.connection.adapter_name).new(self)
-      @setup = false
     end
 
     # Builds associations, callbacks, validations etc.
@@ -103,10 +102,14 @@ module ActsAsOrderedTree
       setup_validations
       setup_callbacks
       protect_attributes columns.parent, columns.position
-      include Scopes
-      include InstanceMethods
-      include Perseverance
-      klass.extend DeprecatedColumnsAccessors
+
+      klass.class_eval do
+        extend Scopes
+        extend DeprecatedColumnsAccessors
+
+        include InstanceMethods
+        include Perseverance
+      end
     end
 
     def setup_associations
@@ -132,10 +135,6 @@ module ActsAsOrderedTree
       Compatibility.version '< 4.0.0' do
         klass.attr_protected *attributes
       end
-    end
-
-    def include(m)
-      klass.send(:include, m)
     end
   end
 end
