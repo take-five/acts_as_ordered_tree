@@ -12,7 +12,7 @@ describe ActsAsOrderedTree::Relation::Preloaded, :transactional do
   end
 
   context 'when preloaded records were not set' do
-    it { expect(relation).to eq records }
+    it { expect(relation).to match_array records }
     it { expect(relation.to_a).not_to be records }
     it { expect{relation.to_a}.to query_database.once }
   end

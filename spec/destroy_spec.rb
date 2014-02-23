@@ -12,7 +12,7 @@ describe ActsAsOrderedTree, 'Destroy node', :transactional do
     let!(:child3) { create model, attrs.merge(:parent => root) }
 
     def assert_destroyed(record)
-      expect(record.class.exists?(record)).to be_false
+      expect(record.class).not_to exist(record)
     end
 
     it 'destroys descendants' do
