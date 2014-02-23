@@ -17,6 +17,8 @@ module ActsAsOrderedTree
 
       attr_reader :from, :transition
 
+      before_delegate :reset_node!
+
       # @param [ActsAsOrderedTree::Node] node
       # @param [ActsAsOrderedTree::Position::Transition] transition
       def initialize(node, transition)
@@ -24,6 +26,13 @@ module ActsAsOrderedTree
         @from = transition.from
 
         super(node, transition.to)
+      end
+
+      private
+      def reset_node!
+        node.reset_position!
+        node.reset_parent_id!
+        node.reload
       end
     end
   end

@@ -138,19 +138,20 @@ describe ActsAsOrderedTree, :transactional do
       child1.ordered_tree_node.should be_same_scope(root1)
     end
     it "should not include orphans" do
-      root1.children.reload.should_not include orphan
-      root1.descendants.reload.should_not include orphan
+      expect(root1.children.reload).not_to include orphan
+      expect(root1.descendants.reload).not_to include orphan
     end
     it "should not allow to move records between scopes" do
-      expect { child2.move_to_child_of root1 }.to raise_error(ActiveRecord::ActiveRecordError)
+      expect(child2.move_to_child_of(root1)).to be_false
+      expect(child2).to have_at_least(1).error_on(:parent)
     end
     it "should not allow to change scope" do
       child2.parent = root1
-      child2.should have_at_least(1).error_on(:parent)
+      expect(child2).to have_at_least(1).error_on(:parent)
     end
     it "should not allow to add scoped record to children collection" do
       root1.children << child2
-      root1.children.reload.should_not include child2
+      expect(root1.children.reload).not_to include child2
     end
   end
 

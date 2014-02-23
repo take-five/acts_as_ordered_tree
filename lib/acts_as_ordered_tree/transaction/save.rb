@@ -14,8 +14,6 @@ module ActsAsOrderedTree
 
       around :copy_attributes
 
-      after 'node.reload'
-
       # @param [ActsAsOrderedTree::Node] node
       # @param [ActsAsOrderedTree::Position] to to which position given +node+ is saved
       def initialize(node, to)

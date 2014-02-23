@@ -16,6 +16,7 @@ module ActsAsOrderedTree
       before 'trigger_callback(:before_add, to.parent)'
 
       after  'to.increment_counter'
+      after  'node.reload'
       after  'trigger_callback(:after_add, to.parent)'
 
       private

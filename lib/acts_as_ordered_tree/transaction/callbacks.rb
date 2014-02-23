@@ -5,7 +5,7 @@ module ActsAsOrderedTree
     module Callbacks
       def self.extended(base)
         base.send(:include, ActiveSupport::Callbacks)
-        base.define_callbacks :transaction
+        base.define_callbacks :transaction, :delegate
       end
 
       # @todo maybe :on option will be useful?
@@ -19,6 +19,10 @@ module ActsAsOrderedTree
 
       def around(filter, *options, &block)
         set_callback :transaction, :around, filter, *options, &block
+      end
+
+      def before_delegate(filter, *options, &block)
+        set_callback :delegate, :before, filter, *options, &block
       end
     end
   end

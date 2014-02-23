@@ -19,7 +19,7 @@ module ActsAsOrderedTree
     module Attributes
       extend ActiveSupport::Concern
 
-      SUFFIXES = ['', '?',  ?=, '_was', '_changed?'].freeze
+      METHODS = ['', '?',  ?=, '_was', '_changed?', %w(reset_ !)].freeze
 
       included do
         dynamic_attribute_accessor :position
@@ -33,11 +33,12 @@ module ActsAsOrderedTree
         #
         # @api private
         def dynamic_attribute_accessor(name, column_name_accessor = name)
-          SUFFIXES.each do |suffix|
-            method_name = "#{name}#{suffix}"
+          METHODS.each do |prefix, suffix|
+            prefix, suffix = suffix, prefix unless suffix
+            method_name = "#{prefix}#{name}#{suffix}"
 
             define_method method_name do |*args|
-              record.send "#{tree.columns[column_name_accessor]}#{suffix}", *args
+              record.send "#{prefix}#{tree.columns[column_name_accessor]}#{suffix}", *args
             end
           end
         end

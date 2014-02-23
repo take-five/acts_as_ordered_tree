@@ -18,3 +18,5 @@ Bug fixes:
 * Fixed several issues that broke tree integrity.
 * Fixed bug when two root nodes could be created with same position (#24).
 * Fixed support of STI and basic inheritance.
+* Fixed bug when user validations and callbacks weren't invoked on movements
+  via `move_to_*` methods (#23).

@@ -119,7 +119,7 @@ module ActsAsOrderedTree
 
     def setup_validations
       if columns.scope?
-        klass.validates_with Validators::ScopeValidator, :on => :update, :unless => :root?
+        klass.validates_with Validators::ScopeValidator, :on => :update, :if => :parent
       end
 
       klass.validates_with Validators::CyclicReferenceValidator, :on => :update, :if => :parent
