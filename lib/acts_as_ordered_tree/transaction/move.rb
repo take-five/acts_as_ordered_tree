@@ -23,6 +23,8 @@ module ActsAsOrderedTree
       after 'trigger_callback(:after_add, to.parent)'
       after 'trigger_callback(:after_remove, from.parent)'
 
+      finalize
+
       private
       def callbacks(&block)
         record.run_callbacks(:move, &block)

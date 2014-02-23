@@ -19,6 +19,8 @@ module ActsAsOrderedTree
       after  'node.reload'
       after  'trigger_callback(:after_add, to.parent)'
 
+      finalize
+
       private
       def set_counter_cache
         record[tree.columns.counter_cache] = 0

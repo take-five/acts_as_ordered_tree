@@ -10,6 +10,8 @@ module ActsAsOrderedTree
         reorder.before :update_tree
       end
 
+      finalize
+
       protected
       # if we reorder node then we cannot put it to position higher than highest
       def push_to_bottom

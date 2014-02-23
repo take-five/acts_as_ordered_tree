@@ -16,6 +16,8 @@ module ActsAsOrderedTree
       after 'from.decrement_counter'
       after 'trigger_callback(:after_remove, from.parent)'
 
+      finalize
+
       # @param [ActsAsOrderedTree::Node] node
       # @param [ActsAsOrderedTree::Position] from from which position given +node+ is destroyed
       def initialize(node, from)
