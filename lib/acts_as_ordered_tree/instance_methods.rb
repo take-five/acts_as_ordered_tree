@@ -71,6 +71,18 @@ module ActsAsOrderedTree
       move_to_child_with_position(parent, position)
     end
 
+    # Returns +true+ if it is possible to move node to left/right/child of +target+.
+    #
+    # @param [ActiveRecord::Base] target
+    # @deprecated
+    def move_possible?(target)
+      ActiveSupport::Deprecation.warn "#{self.class.name}#move_possible? is "\
+        'deprecated and will be removed in acts_as_ordered_tree-2.1', caller(1)
+
+      ordered_tree_node.same_scope?(target) &&
+          !ordered_tree_node.is_or_is_ancestor_of?(target)
+    end
+
     private
     # Around callback that starts ActsAsOrderedTree::Transaction
     def save_ordered_tree_node(&block)
