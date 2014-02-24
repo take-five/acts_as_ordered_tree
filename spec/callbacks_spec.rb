@@ -38,20 +38,22 @@ describe ActsAsOrderedTree, 'before/after add/remove callbacks', :transactional 
 
   matcher :trigger_callback do |*callbacks, &block|
     match_for_should do |proc|
+      @with ||= nil
       Class1.triggered_callbacks = []
       proc.call
       callbacks.all? { |callback| Class1.triggered?(callback, *@with) }
     end
 
     match_for_should_not do |proc|
+      @with ||= nil
       Class1.triggered_callbacks = []
       proc.call
       callbacks.none? { |callback| Class1.triggered?(callback, *@with) }
     end
 
-    chain :with do |*args, &block|
+    chain :with do |*args, &blk|
       @with = args
-      @block = block
+      @block = blk
     end
 
     description do

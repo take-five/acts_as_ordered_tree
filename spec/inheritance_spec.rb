@@ -125,7 +125,7 @@ describe ActsAsOrderedTree, 'inheritance with STI', :transactional do
   let!(:child_5) { StiExample2.create(:name => 'child 5', :parent => child_4) }
   let!(:child_6) { StiExample2.create(:name => 'child 6', :parent => child_4) }
 
-  before { [root, child_1, child_2, child_3, child_4, child_5, child_6].each &:reload }
+  before { [root, child_1, child_2, child_3, child_4, child_5, child_6].each(&:reload) }
 
   describe '#children' do
     it { expect(root.children).to eq [child_1, child_4] }

@@ -49,7 +49,6 @@ module ActsAsOrderedTree
     attr_accessor :parent_id
 
     delegate :record, :to => :node
-    delegate :parent, :to => :record
 
     # @param [ActsAsOrderedTree::Node] node
     # @param [Integer] parent_id
@@ -93,16 +92,6 @@ module ActsAsOrderedTree
       else
         siblings.lock.reload
       end
-    end
-
-    # Returns true if node can have such position
-    def valid?
-      old_parent, old_position = node.parent_id, node.position
-      node.parent_id, node.position = parent_id, position
-
-      node.record.valid?
-    ensure
-      node.parent_id, node.position = old_parent, old_position
     end
 
     # predicate

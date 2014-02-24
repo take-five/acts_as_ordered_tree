@@ -36,39 +36,6 @@ describe ActsAsOrderedTree, :transactional do
     end
   end
 
-  describe "#left_sibling" do
-    shared_examples "tree with siblings" do
-      subject { items }
-
-      its('first.left_sibling') { should be_nil }
-      its('first.right_sibling') { should eq items.second }
-
-      its('second.left_sibling') { should eq items.first }
-      its('second.right_sibling') { should eq items.last }
-
-      its('third.left_sibling') { should eq items.second }
-      its('third.right_sibling') { should be_nil }
-    end
-
-    context "given unscoped tree" do
-      it_should_behave_like "tree with siblings" do
-        let(:items) { create_list :default, 3 }
-      end
-    end
-
-    context "given scoped tree" do
-      let!(:items_1) { create_list :scoped, 3, :scope_type => "s1" }
-      let!(:items_2) { create_list :scoped, 3, :scope_type => "s2" }
-
-      it_should_behave_like "tree with siblings" do
-        let(:items) { items_1 }
-      end
-      it_should_behave_like "tree with siblings" do
-        let(:items) { items_2 }
-      end
-    end
-  end
-
   describe "move actions" do
     let!(:root) { create :default_with_counter_cache, :name => 'root' }
     let!(:child_1) { create :default_with_counter_cache, :parent => root, :name => 'child_1' }

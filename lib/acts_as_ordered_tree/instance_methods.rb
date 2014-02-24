@@ -42,10 +42,18 @@ module ActsAsOrderedTree
              :higher_items,
              :left_sibling,
              :higher_item,
+             :left_sibling=,
+             :left_sibling_id=,
+             :higher_item=,
+             :higher_item_id=,
              :right_siblings,
              :lower_items,
              :right_sibling,
              :lower_item,
+             :right_sibling=,
+             :right_sibling_id=,
+             :lower_item=,
+             :lower_item_id=,
              :to => :ordered_tree_node
 
     delegate :level, :to => :ordered_tree_node

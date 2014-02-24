@@ -75,6 +75,7 @@ module ActsAsOrderedTree
       end
 
       private
+      undef_method :scope=
       def scope=(value)
         columns = Array.wrap(value)
 

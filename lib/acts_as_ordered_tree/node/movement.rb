@@ -39,7 +39,9 @@ module ActsAsOrderedTree
         # load target
         @target = case @_target
                     when ActiveRecord::Base, nil
-                      @_target
+                      @_target.lock!
+                    when nil
+                      nil
                     else
                       scope = node.scope.lock
 

@@ -39,6 +39,7 @@ module ActsAsOrderedTree
       @connection = connection
       @attempts = 0
       @callbacks = []
+      @state = nil
     end
 
     # Starts persevering transaction

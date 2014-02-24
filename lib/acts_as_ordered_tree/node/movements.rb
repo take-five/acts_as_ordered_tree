@@ -43,10 +43,7 @@ module ActsAsOrderedTree
       # @param [ActiveRecord::Base, #to_i] node may be another record of ID
       def move_to_above_of(node)
         movement(node, :strict => true) do |to|
-          lower = to.target.parent_id == parent_id && to.target.position > position
-
-          to.parent = to.target.parent_id
-          to.position = lower ? to.target.position - 1 : to.target.position
+          self.right_sibling = to.target.record
         end
       end
       alias_method :move_to_left_of, :move_to_above_of
@@ -56,10 +53,7 @@ module ActsAsOrderedTree
       # @param [ActiveRecord::Base, #to_i] node may be another record of ID
       def move_to_bottom_of(node)
         movement(node, :strict => true) do |to|
-          lower = to.target.parent_id == parent_id && to.target.position > position
-
-          to.parent = to.target.parent_id
-          to.position = lower || to.target.record == record ? to.target.position : to.target.position + 1
+          self.left_sibling = to.target.record
         end
       end
       alias_method :move_to_right_of, :move_to_bottom_of
