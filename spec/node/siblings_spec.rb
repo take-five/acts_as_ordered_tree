@@ -4,6 +4,11 @@ require 'spec_helper'
 
 describe ActsAsOrderedTree::Node::Siblings, :transactional do
   shared_examples 'siblings' do |model|
+    # silence pending examples
+    #
+    # @todo fix all xits
+    def self.xit(*) end
+
     let(:root) { create model }
     let(:items) { create_list model, 3, :parent => root }
 

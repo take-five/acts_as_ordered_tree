@@ -1,9 +1,8 @@
 # This script establishes connection, creates DB schema and loads models definitions.
 # Used by both rspec and cucumber
 
-require 'active_record'
-#require 'active_support/core_ext/module' # rails 3.0 workaround
 require 'acts_as_ordered_tree'
+require 'active_record'
 
 require 'logger'
 require 'yaml'

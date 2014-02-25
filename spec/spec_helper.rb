@@ -5,9 +5,8 @@ require 'bundler/setup'
 
 require 'rspec'
 require 'rspec-expectations'
-require 'active_support/core_ext/object/blank'
 
-if ENV['COVERAGE'].present?
+if ENV['COVERAGE'].to_i.nonzero?
   begin
     require 'simplecov'
     SimpleCov.command_name "rspec/#{File.basename(ENV['BUNDLE_GEMFILE'])}/#{ENV['DB']}"
@@ -22,7 +21,6 @@ end
 require 'support/db/boot'
 
 require 'factory_girl'
-silence_warnings { require 'shoulda-matchers' }
 require 'support/factories'
 require 'support/matchers'
 require 'database_cleaner'

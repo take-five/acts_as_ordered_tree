@@ -3,11 +3,10 @@
 require 'bundler/setup'
 require 'cucumber/rspec/doubles'
 require 'database_cleaner'
-require 'active_support/core_ext/object/blank'
 
 ENV['DB'] ||= 'pg'
 
-if ENV['COVERAGE'].present?
+if ENV['COVERAGE'].to_i.nonzero?
   begin
     require 'simplecov'
     SimpleCov.command_name "cucumber/#{File.basename(ENV['BUNDLE_GEMFILE'])}/#{ENV['DB']}"
