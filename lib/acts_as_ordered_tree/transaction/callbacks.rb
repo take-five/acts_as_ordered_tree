@@ -8,7 +8,6 @@ module ActsAsOrderedTree
         base.define_callbacks :transaction, :delegate
       end
 
-      # @todo maybe :on option will be useful?
       def before(filter, *options, &block)
         set_callback :transaction, :before, filter, *options, &block
       end

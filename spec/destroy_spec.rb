@@ -50,18 +50,5 @@ describe ActsAsOrderedTree, 'Destroy node', :transactional do
     it 'decrements parent children counter' do
       expect{child1.destroy}.to change{root.reload.categories_count}.from(3).to(2)
     end
-
-    # @todo move it somewhere
-    #it 'does not execute SQL queries' do
-    #  queries = []
-    #  subscriber = ActiveSupport::Notifications.subscribe('sql.active_record') do |*, sql|
-    #    queries << sql
-    #  end
-    #
-    #  root.children.reset
-    #  expect{root.children.size}.not_to change(queries, :size)
-    #
-    #  ActiveSupport::Notifications.unsubscribe(subscriber)
-    #end
   end
 end
