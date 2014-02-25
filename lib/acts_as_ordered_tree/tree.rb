@@ -25,6 +25,11 @@ module ActsAsOrderedTree
       :depth_column => :depth
     }.freeze
 
+    PROTECTED_ATTRIBUTES = :left_sibling, :left_sibling_id,
+                           :higher_item, :higher_item_id,
+                           :right_sibling, :right_sibling_id,
+                           :lower_item, :lower_item_id
+
     attr_reader :klass
 
     # @!attribute [r] columns
@@ -101,7 +106,7 @@ module ActsAsOrderedTree
 
       setup_validations
       setup_callbacks
-      protect_attributes columns.parent, columns.position
+      protect_attributes columns.parent, columns.position, *PROTECTED_ATTRIBUTES
 
       klass.class_eval do
         extend Scopes
