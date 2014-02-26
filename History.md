@@ -4,11 +4,12 @@ The library completely redesigned, tons of refactorings applied.
 
 ### Breaking changes
 
-* All movement methods now use `ActiveRecord::Base#save` so all
+* Movement methods now use `ActiveRecord::Base#save` so all
   user validations and callbacks are invoked now.
 
 ### New features
 
+* Reduced amount of UPDATE SQL-queries during movements and reorders.
 * Added collection iterators:
   1. `each_with_level` which yields each node of collection with its level.
   2. `each_without_orphans` which yields only that nodes which are not orphaned

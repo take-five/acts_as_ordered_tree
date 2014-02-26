@@ -17,7 +17,7 @@ module ActsAsOrderedTree
 
       attr_reader :from, :transition
 
-      before_delegate :reset_node!
+      around :update_tree
 
       # @param [ActsAsOrderedTree::Node] node
       # @param [ActsAsOrderedTree::Position::Transition] transition
@@ -28,11 +28,50 @@ module ActsAsOrderedTree
         super(node, transition.to)
       end
 
+      protected
+      def update_tree
+        callbacks = transition.reorder? ? :reorder : :move
+
+        record.run_callbacks(callbacks) do
+          record.with_update_scope do |update|
+            update.scope = update_scope
+            update.set update_values.merge(changed_attributes)
+
+            yield
+          end
+        end
+      end
+
+      def update_scope
+        # implement in successors
+      end
+
+      def update_values
+        # implement in successors
+      end
+
       private
-      def reset_node!
-        node.reset_position!
-        node.reset_parent_id!
-        node.reload
+      # Returns hash of UPDATE..SET expressions for each
+      # changed record attribute (except tree attributes)
+      #
+      # @return [Hash<String => Arel::Nodes::Node>]
+      def changed_attributes
+        changed_attributes_names.each_with_object({}) do |attr, hash|
+          hash[attr] = attribute_value(attr)
+        end
+      end
+
+      def attribute_value(attr)
+        attr_value = record.read_attribute(attr)
+        quoted = record.class.connection.quote(attr_value)
+
+        switch.
+            when(id == record.id).then(Arel.sql(quoted)).
+            else(attribute(attr))
+      end
+
+      def changed_attributes_names
+        record.changed - (tree.columns.to_a - tree.columns.scope)
       end
     end
   end

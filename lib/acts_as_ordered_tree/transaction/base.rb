@@ -32,13 +32,9 @@ module ActsAsOrderedTree
       end
 
       # Start persevering transaction, which will restart on deadlock
-      def start
+      def start(&block)
         transaction.start do
-          run_callbacks :transaction do
-            run_callbacks :delegate
-
-            yield
-          end
+          run_callbacks(:transaction, &block)
         end
       end
 

@@ -69,6 +69,7 @@ module ActsAsOrderedTree
 
         def update!
           scope.update_all(to_sql)
+          record.reload
         end
 
         private

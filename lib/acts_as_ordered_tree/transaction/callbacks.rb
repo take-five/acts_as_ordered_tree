@@ -5,7 +5,7 @@ module ActsAsOrderedTree
     module Callbacks
       def self.extended(base)
         base.send(:include, ActiveSupport::Callbacks)
-        base.define_callbacks :transaction, :delegate
+        base.define_callbacks :transaction
       end
 
       def before(filter, *options, &block)
@@ -20,17 +20,12 @@ module ActsAsOrderedTree
         set_callback :transaction, :around, filter, *options, &block
       end
 
-      def before_delegate(filter, *options, &block)
-        set_callback :delegate, :before, filter, *options, &block
-      end
-
       # This method should be called in concrete transaction classes to prevent
       # race conditions in multi-threaded environments.
       #
       # @api private
       def finalize
         finalize_callbacks :transaction
-        finalize_callbacks :delegate
       end
 
       private
