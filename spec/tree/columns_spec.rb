@@ -28,6 +28,13 @@ describe ActsAsOrderedTree::Tree::Columns do
       it { expect(columns.send(method)).to be nil }
       it { expect(columns.send("#{method}?")).to be false }
     end
+
+    context 'when false given' do
+      subject(:columns) { described_class.new(klass, option_name => false) }
+
+      it { expect(columns.send(method)).to be nil }
+      it { expect(columns.send("#{method}?")).to be false }
+    end
   end
 
   include_examples 'ordered tree column', :parent, :parent_column, :parent_id

@@ -50,6 +50,11 @@ describe ActsAsOrderedTree::Tree::ChildrenAssociation, :transactional do
         it { expect(first.children).to be_loaded }
         it { expect(first.children).to have(3).items }
       end
+
+      describe 'extensions' do
+        it { expect(root.children).to respond_to :each_with_level }
+        it { expect(root.children).to respond_to :each_without_orphans }
+      end
     end
   end
 

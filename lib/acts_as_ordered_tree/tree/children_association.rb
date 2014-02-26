@@ -2,6 +2,7 @@
 
 require 'acts_as_ordered_tree/compatibility'
 require 'acts_as_ordered_tree/tree/association'
+require 'acts_as_ordered_tree/relation/iterable'
 
 module ActsAsOrderedTree
   class Tree
@@ -45,7 +46,7 @@ module ActsAsOrderedTree
           :foreign_key => tree.columns.parent,
           :inverse_of => inverse_of,
           :dependent => :destroy,
-          :extend => extension
+          :extend => [extension, Relation::Iterable].compact
         ]
       end
 
@@ -65,7 +66,7 @@ module ActsAsOrderedTree
             assoc_scope[join_or_parent]
           else
             where(nil)
-          end
+          end.extending(Relation::Iterable)
         }
       end
 

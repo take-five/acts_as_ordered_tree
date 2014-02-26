@@ -22,6 +22,12 @@ class DefaultWithCounterCache < ActiveRecord::Base
   default_scope { where('1=1') }
 end
 
+class DefaultWithoutDepth < ActiveRecord::Base
+  self.table_name = 'categories'
+
+  acts_as_ordered_tree :depth_column => false
+end
+
 class Scoped < ActiveRecord::Base
   self.table_name = 'scoped'
 

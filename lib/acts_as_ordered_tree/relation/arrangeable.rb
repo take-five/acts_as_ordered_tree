@@ -1,5 +1,8 @@
 # coding: utf-8
 
+require 'acts_as_ordered_tree/iterators/arranger'
+require 'acts_as_ordered_tree/iterators/orphans_pruner'
+
 module ActsAsOrderedTree
   module Relation
     # This AR::Relation extension allows to arrange collection into
@@ -7,80 +10,24 @@ module ActsAsOrderedTree
     module Arrangeable
       # Arrange associated collection into a nested hash of the form
       # {node => children}, where children = {} if the node has no children.
+      #
+      # It is possible to discard orphaned nodes (nodes which don't have
+      # corresponding parent node in this collection) by passing `:orphans => :discard`
+      # as option.
+      #
+      # @param [Hash] options
+      # @option options [:discard, nil] :orphans
+      # @return [Hash<ActiveRecord::Base => Hash>]
       def arrange(options = {})
-        @arranger ||= Arranger.new(self, options)
+        collection = self
+
+        if options && options[:orphans] == :discard
+          collection = Iterators::OrphansPruner.new(self)
+        end
+
+        @arranger ||= Iterators::Arranger.new(collection)
         @arranger.arrange
       end
-
-      # @api private
-      class Arranger
-        attr_reader :collection, :cache
-
-        def initialize(collection, options = {})
-          @collection = collection
-          @discard_orphans = options[:orphans] == :discard
-          @min_level = nil
-
-          if discard_orphans? && !collection.klass.ordered_tree.columns.depth? && ActiveRecord::Base.logger
-            ActiveRecord::Base.logger.warn {
-              '%s model has no `depth` column, '\
-            'it can lead to N+1 queries during #arrange method invocation' % collection.klass
-            }
-          end
-
-          @cache = Hash.new
-          @prepared = false
-        end
-
-        def arrange
-          prepare unless prepared?
-
-          @arranged ||= collection.each_with_object(Hash.new) do |node, result|
-            ancestors = ancestors(node)
-
-            if discard_orphans?
-              root = ancestors.first || node
-
-              next if root.level > @min_level
-            end
-
-            insertion_point = result
-
-            ancestors.each { |a| insertion_point = (insertion_point[a] ||= {}) }
-
-            insertion_point[node] = {}
-          end
-        end
-
-        private
-        def prepare
-          collection.each do |node|
-            cache[node.id] = node if node.id
-            @min_level = [@min_level, node.level].compact.min
-          end
-
-          @prepared = true
-        end
-
-        def discard_orphans?
-          @discard_orphans
-        end
-
-        def prepared?
-          @prepared
-        end
-
-        # get parent node of +node+
-        def parent(node)
-          cache[node.ordered_tree_node.parent_id]
-        end
-
-        def ancestors(node)
-          parent = parent(node)
-          parent ? ancestors(parent) + [parent] : []
-        end
-      end
-      private_constant :Arranger
     end
   end
 end

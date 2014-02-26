@@ -4,6 +4,12 @@ The library completely redesigned, tons of refactorings applied.
 
 New features:
 
+* Added collection iterators:
+  1. `each_with_level` which yields each node of collection with its level.
+  2. `each_without_orphans` which yields only that nodes which are not orphaned
+     (i.e. that nodes which don't have corresponding parent within iterated collection).
+  3. `arrange` which constructs hash of hashes where each key is node and value
+     is its hash of its children.
 * Added ability to explicitly set left/right sibling for node via
   `#left_sibling=` and `#right_sibling=` methods (#30).
 * `.leaves` scope now works even with models that don't have `counter_cache` column (#29).

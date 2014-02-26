@@ -1,6 +1,7 @@
 # coding: utf-8
 
 require 'acts_as_ordered_tree/relation/arrangeable'
+require 'acts_as_ordered_tree/relation/iterable'
 
 module ActsAsOrderedTree
   class Node
@@ -9,7 +10,7 @@ module ActsAsOrderedTree
       #
       # @return [ActiveRecord::Relation]
       def ancestors
-        arrangeable tree.adapter.ancestors(record)
+        iterable tree.adapter.ancestors(record)
       end
 
       # Returns relation that containt all node's parents
@@ -17,14 +18,14 @@ module ActsAsOrderedTree
       #
       # @return [ActiveRecord::Relation]
       def self_and_ancestors
-        arrangeable tree.adapter.self_and_ancestors(record)
+        iterable tree.adapter.self_and_ancestors(record)
       end
 
       # Returns collection of all node's children including their nested children.
       #
       # @return [ActiveRecord::Relation]
       def descendants
-        arrangeable tree.adapter.descendants(record)
+        iterable tree.adapter.descendants(record)
       end
 
       # Returns collection of all node's children including their
@@ -32,7 +33,7 @@ module ActsAsOrderedTree
       #
       # @return [ActiveRecord::Relation]
       def self_and_descendants
-        arrangeable tree.adapter.self_and_descendants(record)
+        iterable tree.adapter.self_and_descendants(record)
       end
 
       # Returns very first ancestor of current node. If current node is root,
@@ -44,8 +45,8 @@ module ActsAsOrderedTree
       end
 
       private
-      def arrangeable(scope)
-        scope.extending(Relation::Arrangeable)
+      def iterable(scope)
+        scope.extending(Relation::Arrangeable, Relation::Iterable)
       end
     end # module Traversals
   end # module Node

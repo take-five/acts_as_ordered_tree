@@ -31,6 +31,9 @@ describe ActsAsOrderedTree::Node::Traversals, :transactional do
       it { expect{root_1.self_and_ancestors}.not_to query_database }
       it { expect(child_1.self_and_ancestors).to eq [root_1, child_1] }
       it { expect(grandchild_1.self_and_ancestors).to eq [root_1, child_1, grandchild_1] }
+
+      it { expect(child_1.self_and_ancestors).to respond_to :each_with_level }
+      it { expect(child_1.self_and_ancestors).to respond_to :each_without_orphans }
     end
 
     describe '#ancestors' do
@@ -38,18 +41,27 @@ describe ActsAsOrderedTree::Node::Traversals, :transactional do
       it { expect{root_1.ancestors}.not_to query_database }
       it { expect(child_1.ancestors).to eq [root_1] }
       it { expect(grandchild_1.ancestors).to eq [root_1, child_1] }
+
+      it { expect(child_1.ancestors).to respond_to :each_with_level }
+      it { expect(child_1.ancestors).to respond_to :each_without_orphans }
     end
 
     describe '#self_and_descendants' do
       it { expect(root_1.self_and_descendants).to eq [root_1, child_1, grandchild_1] }
       it { expect(child_1.self_and_descendants).to eq [child_1, grandchild_1] }
       it { expect(grandchild_1.self_and_descendants).to eq [grandchild_1] }
+
+      it { expect(root_1.self_and_descendants).to respond_to :each_with_level }
+      it { expect(root_1.self_and_descendants).to respond_to :each_without_orphans }
     end
 
     describe '#descendants' do
       it { expect(root_1.descendants).to eq [child_1, grandchild_1] }
       it { expect(child_1.descendants).to eq [grandchild_1] }
       it { expect(grandchild_1.descendants).to eq [] }
+
+      it { expect(root_1.descendants).to respond_to :each_with_level }
+      it { expect(root_1.descendants).to respond_to :each_without_orphans }
     end
   end
 
