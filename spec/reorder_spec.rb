@@ -9,8 +9,11 @@ describe ActsAsOrderedTree, 'Reorder via save', :transactional do
   let!(:child3) { create :default, :parent => root }
 
   def reorder(node, position)
+    name = "category #{rand(100..1000)}"
     node.position = position
-    expect { node.save!(:validate => false) }.not_to raise_error
+    node.name = name
+    expect { node.save! }.not_to raise_error
+    expect(node.name).to eq name
   end
 
   def assert_order(*nodes)

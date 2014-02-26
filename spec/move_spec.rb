@@ -17,13 +17,16 @@ describe ActsAsOrderedTree, 'Movement via save', :transactional do
   let!(:child5) { create :default_with_counter_cache, :parent => child4 }
 
   def move(node, new_parent, new_position)
+    name = "category #{rand(100..1000)}"
     node.parent = new_parent
     node.position = new_position
+    node.name = name
 
     node.save
 
     expect(node.reload.parent).to eq new_parent
     expect(node.position).to eq new_position
+    expect(node.name).to eq name
   end
 
   context 'when child 2 moved under child 4 to position 1' do

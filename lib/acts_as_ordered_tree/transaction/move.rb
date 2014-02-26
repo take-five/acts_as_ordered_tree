@@ -8,10 +8,8 @@ module ActsAsOrderedTree
       around :callbacks
       before 'trigger_callback(:before_remove, from.parent)'
       before 'trigger_callback(:before_add, to.parent)'
-      before :update_tree
-      before 'transition.update_counters'
 
-      before :update_descendants_depth, :if => [
+      after :update_descendants_depth, :if => [
           'transition.movement?',
           'tree.columns.depth?',
           'transition.level_changed?',
@@ -20,23 +18,35 @@ module ActsAsOrderedTree
 
       after 'trigger_callback(:after_add, to.parent)'
       after 'trigger_callback(:after_remove, from.parent)'
+      after 'transition.update_counters'
 
       finalize
 
       private
-      def callbacks(&block)
-        record.run_callbacks(:move, &block)
+      def callbacks
+        record.run_callbacks :move do
+          record.with_update_scope do |update|
+            update.scope = scope
+            update.set update_values
+
+            yield
+
+            record.reload
+          end
+        end
       end
 
-      def update_tree
+      def update_values
         updates = Hash[
-          position => position_value,
-          parent_id => parent_id_value
+            position => position_value,
+            parent_id => parent_id_value
         ]
 
         updates[depth] = depth_value if tree.columns.depth? && transition.level_changed?
 
-        scope.update_all set updates
+        changed_attributes.each { |attr| updates[attr] = attribute_value(attr) }
+
+        updates
       end
 
       # Records to be updated
@@ -66,6 +76,19 @@ module ActsAsOrderedTree
         switch.
             when(id == record.id, to.depth).
             else(depth)
+      end
+
+      def attribute_value(attr)
+        attr_value = record.read_attribute(attr)
+        quoted = record.class.connection.quote(attr_value)
+
+        switch.
+            when(id == record.id).then(Arel.sql(quoted)).
+            else(attribute(attr))
+      end
+
+      def changed_attributes
+        record.changed - (tree.columns.to_a - tree.columns.scope)
       end
 
       def update_descendants_depth

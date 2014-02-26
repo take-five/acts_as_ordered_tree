@@ -2,7 +2,12 @@
 
 The library completely redesigned, tons of refactorings applied.
 
-New features:
+### Breaking changes
+
+* All movement methods now use `ActiveRecord::Base#save` so all
+  user validations and callbacks are invoked now.
+
+### New features
 
 * Added collection iterators:
   1. `each_with_level` which yields each node of collection with its level.
@@ -21,7 +26,8 @@ New features:
 * Flexible control over tree traversals via blocks passed to `#descendants`
   and `#ancestors` (#21).
 
-Deprecations:
+### Deprecations
+
 * Deprecated methods:
   1. `#insert_at`. It is recommended to use `#move_to_child_with_position` instead.
   2. `#branch? is deprecated in favour of `#has_children?`.
