@@ -19,20 +19,17 @@ describe ActsAsOrderedTree, 'before/after add/remove callbacks', :transactional 
                          :before_remove => :before_remove,
                          :after_remove => :after_remove
 
-    before_reorder :before_reorder
-    after_reorder :after_reorder
-    before_move :before_move
-    after_move :after_move
-
     def run_callback(kind, *args)
       self.class.triggered_callbacks ||= []
       self.class.triggered_callbacks << [kind, self, *args]
+      yield if block_given?
     end
 
-    CALLBACKS = [:before, :after].product([:add, :remove, :move, :reorder]).map { |a, b| "#{a}_#{b}".to_sym }
+    CALLBACKS = [:before, :after, :around].product([:add, :remove, :move, :reorder]).map { |a, b| "#{a}_#{b}".to_sym }
 
     CALLBACKS.each do |callback|
-      define_method(callback) { |*args| run_callback(callback, *args) }
+      define_method(callback) { |*args, &block| run_callback(callback, *args, &block) }
+      send(callback, callback) if respond_to?(callback)
     end
   end
 
@@ -135,17 +132,17 @@ describe ActsAsOrderedTree, 'before/after add/remove callbacks', :transactional 
     it 'fires *_move callbacks when node is moved to another parent' do
       expect {
         child2.update_attributes!(:parent => child4)
-      }.to trigger_callbacks(:before_move, :after_move).with(child2)
+      }.to trigger_callbacks(:before_move, :around_move, :after_move).with(child2)
     end
 
     it 'does not trigger *_move callbacks when node is not moved to another parent' do
       expect {
         child2.move_lower
-      }.not_to trigger_callbacks(:before_move, :after_move)
+      }.not_to trigger_callbacks(:before_move, :around_move, :after_move)
 
       expect {
         root.move_to_root
-      }.not_to trigger_callbacks(:before_move, :after_move)
+      }.not_to trigger_callbacks(:before_move, :around_move, :after_move)
     end
   end
 
@@ -154,13 +151,13 @@ describe ActsAsOrderedTree, 'before/after add/remove callbacks', :transactional 
       expect {
         child2.position += 1
         child2.save
-      }.to trigger_callbacks(:before_reorder, :after_reorder).with(child2)
+      }.to trigger_callbacks(:before_reorder, :around_reorder, :after_reorder).with(child2)
     end
 
     it 'does not fire *_reorder callbacks when node is moved to another parent' do
       expect {
         child2.move_to_root
-      }.not_to trigger_callbacks(:before_reorder, :after_reorder)
+      }.not_to trigger_callbacks(:before_reorder, :around_reorder, :after_reorder)
     end
   end
 

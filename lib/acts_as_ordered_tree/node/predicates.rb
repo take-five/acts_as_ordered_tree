@@ -19,12 +19,12 @@ module ActsAsOrderedTree
       end
 
       # Returns true if node contains any children.
-      def branch?
+      def has_children?
         !leaf?
       end
 
       # Returns true is node is not a root node.
-      def child?
+      def has_parent?
         !root?
       end
 

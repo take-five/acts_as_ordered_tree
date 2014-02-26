@@ -2,13 +2,16 @@
 
 require 'acts_as_ordered_tree/node'
 require 'acts_as_ordered_tree/transaction/factory'
+require 'acts_as_ordered_tree/deprecate'
 
 module ActsAsOrderedTree
   module InstanceMethods
+    extend Deprecate
+
     delegate :root?,
              :leaf?,
-             :branch?,
-             :child?,
+             :has_children?,
+             :has_parent?,
              :first?,
              :last?,
              :is_descendant_of?,
@@ -71,11 +74,7 @@ module ActsAsOrderedTree
     # +acts_as_list+ compatibility
     #
     # @deprecated
-    def insert_at(position = 1)
-      ActiveSupport::Deprecation.warn "#{self.class.name}#insert_at is "\
-        'deprecated and will be removed in acts_as_ordered_tree-2.1, '\
-        'use #move_to_child_with_position instead', caller(1)
-
+    deprecated_method :insert_at, :move_to_child_with_position do |position = 1|
       move_to_child_with_position(parent, position)
     end
 
@@ -83,13 +82,20 @@ module ActsAsOrderedTree
     #
     # @param [ActiveRecord::Base] target
     # @deprecated
-    def move_possible?(target)
-      ActiveSupport::Deprecation.warn "#{self.class.name}#move_possible? is "\
-        'deprecated and will be removed in acts_as_ordered_tree-2.1', caller(1)
-
+    deprecated_method :move_possible? do |target|
       ordered_tree_node.same_scope?(target) &&
           !ordered_tree_node.is_or_is_ancestor_of?(target)
     end
+
+    # Returns true if node contains any children.
+    #
+    # @deprecated
+    deprecated_method :branch?, :has_children?
+
+    # Returns true is node is not a root node.
+    #
+    # @deprecated
+    deprecated_method :child?, :has_parent?
 
     private
     # Around callback that starts ActsAsOrderedTree::Transaction

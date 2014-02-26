@@ -55,7 +55,7 @@ module ActsAsOrderedTree
         return none unless node
 
         if can_traverse_up?(node)
-          if node.ordered_tree_node.child?
+          if node.ordered_tree_node.has_parent?
             yield
           else
             including.empty? ? none : preloaded(including)

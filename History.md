@@ -21,6 +21,13 @@ New features:
 * Flexible control over tree traversals via blocks passed to `#descendants`
   and `#ancestors` (#21).
 
+Deprecations:
+* Deprecated methods:
+  1. `#insert_at`. It is recommended to use `#move_to_child_with_position` instead.
+  2. `#branch? is deprecated in favour of `#has_children?`.
+  3. `#child?` is deprecated in favour of `#has_parent?`.
+  4. `#move_possible?` is deprecated in favour of built-in and user defined validations.
+
 Bug fixes:
 
 * Fixed several issues that broke tree integrity.

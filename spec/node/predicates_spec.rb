@@ -23,14 +23,20 @@ describe ActsAsOrderedTree::Node::Predicates, :transactional do
         it { expect{grandchild.root?}.not_to query_database }
       end
 
-      describe '#child?' do
-        it { expect(root).not_to be_child }
-        it { expect(child).to be_child }
-        it { expect(grandchild).to be_child }
+      describe '#has_parent?' do
+        it { expect(root).not_to have_parent }
+        it { expect(child).to have_parent }
+        it { expect(grandchild).to have_parent }
 
-        it { expect{root.child?}.not_to query_database }
-        it { expect{child.child?}.not_to query_database }
-        it { expect{grandchild.child?}.not_to query_database }
+        it { expect{root.has_parent?}.not_to query_database }
+        it { expect{child.has_parent?}.not_to query_database }
+        it { expect{grandchild.has_parent?}.not_to query_database }
+
+        it 'should be aliased but deprecated as #child?' do
+          expect(ActiveSupport::Deprecation).to receive(:warn)
+          expect(root).to receive(:has_parent?)
+          ActiveSupport::Deprecation.silence{root.child?}
+        end
       end
 
       describe '#leaf?' do
@@ -70,11 +76,17 @@ describe ActsAsOrderedTree::Node::Predicates, :transactional do
         end
       end
 
-      describe '#branch?' do
+      describe '#has_children?' do
         # opposite of #leaf?
-        it { expect(root).to be_branch }
-        it { expect(child).to be_branch }
-        it { expect(grandchild).not_to be_branch }
+        it { expect(root).to have_children }
+        it { expect(child).to have_children }
+        it { expect(grandchild).not_to have_children }
+
+        it 'should be aliased but deprecated as #branch?' do
+          expect(ActiveSupport::Deprecation).to receive(:warn)
+          expect(root).to receive(:has_children?)
+          ActiveSupport::Deprecation.silence{root.branch?}
+        end
       end
 
       describe '#is_descendant_of?' do

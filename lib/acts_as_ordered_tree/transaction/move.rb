@@ -5,13 +5,11 @@ require 'acts_as_ordered_tree/transaction/update'
 module ActsAsOrderedTree
   module Transaction
     class Move < Update
-      with_options :if => 'transition.movement?' do |movement|
-        movement.around :callbacks
-        movement.before :update_tree
-        movement.before 'transition.update_counters'
-      end
+      around :callbacks
       before 'trigger_callback(:before_remove, from.parent)'
       before 'trigger_callback(:before_add, to.parent)'
+      before :update_tree
+      before 'transition.update_counters'
 
       before :update_descendants_depth, :if => [
           'transition.movement?',
