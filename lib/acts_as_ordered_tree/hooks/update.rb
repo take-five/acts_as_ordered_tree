@@ -36,7 +36,7 @@ module ActsAsOrderedTree
       end
 
       def hook_update
-        self.__update_hook = CustomUpdate.new(self)
+        self.__update_hook = UpdateManager.new(self)
         yield __update_hook
       ensure
         self.__update_hook = nil
@@ -51,7 +51,7 @@ module ActsAsOrderedTree
         end
       end
 
-      class CustomUpdate
+      class UpdateManager
         attr_reader :record
         attr_accessor :scope, :values
 
