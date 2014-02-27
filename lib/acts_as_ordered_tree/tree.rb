@@ -9,7 +9,8 @@ require 'acts_as_ordered_tree/tree/deprecated_columns_accessors'
 require 'acts_as_ordered_tree/tree/parent_association'
 require 'acts_as_ordered_tree/tree/perseverance'
 require 'acts_as_ordered_tree/tree/scopes'
-require 'acts_as_ordered_tree/tree/update_scope'
+
+require 'acts_as_ordered_tree/hooks'
 
 require 'acts_as_ordered_tree/adapters'
 require 'acts_as_ordered_tree/validators'
@@ -115,7 +116,7 @@ module ActsAsOrderedTree
 
         include InstanceMethods
         include Perseverance
-        include UpdateScope
+        include Hooks
       end
     end
 

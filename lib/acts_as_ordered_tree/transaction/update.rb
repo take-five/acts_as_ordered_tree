@@ -33,9 +33,9 @@ module ActsAsOrderedTree
         callbacks = transition.reorder? ? :reorder : :move
 
         record.run_callbacks(callbacks) do
-          record.with_update_scope do |update|
+          record.hook_update do |update|
             update.scope = update_scope
-            update.set update_values.merge(changed_attributes)
+            update.values = update_values.merge(changed_attributes)
 
             yield
           end
