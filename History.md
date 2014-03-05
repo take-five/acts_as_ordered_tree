@@ -6,6 +6,8 @@ The library completely redesigned, tons of refactorings applied.
 
 * Movement methods now use `ActiveRecord::Base#save` so all
   user validations and callbacks are invoked now.
+* `parent_id` and `position` attributes are no longer protected
+  by default. It's up to developer to make them `attr_protected` now.
 
 ### New features
 
