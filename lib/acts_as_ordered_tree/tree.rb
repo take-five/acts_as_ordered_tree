@@ -108,7 +108,7 @@ module ActsAsOrderedTree
 
       setup_validations
       setup_callbacks
-      protect_attributes columns.parent, columns.position, *PROTECTED_ATTRIBUTES
+      protect_attributes *PROTECTED_ATTRIBUTES
 
       klass.class_eval do
         extend Scopes
