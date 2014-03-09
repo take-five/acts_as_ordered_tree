@@ -47,8 +47,10 @@ describe ActsAsOrderedTree, 'Destroy node', :transactional do
   context 'Model with counter cache' do
     include_examples 'destroy ordered tree node', :default_with_counter_cache
 
+    before { root.reload }
+
     it 'decrements parent children counter' do
-      expect{child1.destroy}.to change{root.reload.categories_count}.from(3).to(2)
+      expect{child1.destroy and root.reload}.to change(root, :categories_count).from(3).to(2)
     end
   end
 end

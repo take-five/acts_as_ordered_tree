@@ -31,7 +31,7 @@ describe ActsAsOrderedTree::Node::Reloading, :transactional do
       end
 
       it 'does not reload another attributes' do
-        expect{node.reload}.not_to change{record.name}
+        expect{node.reload}.not_to change(record, :name)
       end
     end
   end

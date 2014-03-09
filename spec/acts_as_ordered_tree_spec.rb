@@ -76,12 +76,9 @@ describe ActsAsOrderedTree, :transactional do
     end
 
     context "changed attributes" do
-      before do
-        child_2.name = 'changed_100'
-        child_2.move_to_left_of child_1
-      end
+      before { child_2.name = 'changed_100' }
 
-      it { child_2.reload.name.should eq 'child_2' }
+      it { expect{child_2.move_to_left_of(child_1)}.to change(child_2, :name).to('child_2') }
     end
 
   end

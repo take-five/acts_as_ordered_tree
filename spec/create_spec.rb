@@ -12,22 +12,22 @@ describe ActsAsOrderedTree, 'Create node', :transactional do
       before { record.position = nil }
 
       it 'does not change node parent' do
-        expect{record.save}.not_to change{record.parent}
+        expect{record.save}.not_to change(record, :parent)
       end
 
       it 'puts record to position = 1 when there are no siblings' do
-        expect{record.save}.to change{record.position}.from(nil).to(1)
+        expect{record.save}.to change(record, :position).from(nil).to(1)
       end
 
       it 'puts record to bottom position when there are some siblings' do
         create model, :parent => parent
 
-        expect{record.save}.to change{record.position}.from(nil).to(2)
+        expect{record.save}.to change(record, :position).from(nil).to(2)
       end
 
       it 'calculates depth column' do
         if record.ordered_tree.columns.depth?
-          expect{record.save}.to change{record.depth}.from(nil).to(parent ? parent.depth + 1 : 0)
+          expect{record.save}.to change(record, :depth).from(nil).to(parent ? parent.depth + 1 : 0)
         end
       end
     end
@@ -36,13 +36,13 @@ describe ActsAsOrderedTree, 'Create node', :transactional do
       before { record.position = 3 }
 
       it 'changes position to 1 if siblings is empty' do
-        expect{record.save}.to change{record.position}.from(3).to(1)
+        expect{record.save}.to change(record, :position).from(3).to(1)
       end
 
       it 'changes position to highest if there are too few siblings' do
         create model, :parent => parent
 
-        expect{record.save}.to change{record.position}.from(3).to(2)
+        expect{record.save}.to change(record, :position).from(3).to(2)
       end
 
       it 'increments position of lower siblings on insert' do
@@ -54,7 +54,7 @@ describe ActsAsOrderedTree, 'Create node', :transactional do
         expect(second.reload.position).to eq 2
         expect(third.reload.position).to eq 3
 
-        expect{record.save}.to change{third.reload.position}.from(3).to(4)
+        expect{record.save and third.reload}.to change(third, :position).from(3).to(4)
 
         expect(first.reload.position).to eq 1
         expect(second.reload.position).to eq 2
@@ -63,7 +63,7 @@ describe ActsAsOrderedTree, 'Create node', :transactional do
 
       it 'calculates depth column' do
         if record.ordered_tree.columns.depth?
-          expect{record.save}.to change{record.depth}.from(nil).to(parent ? parent.depth + 1 : 0)
+          expect{record.save}.to change(record, :depth).from(nil).to(parent ? parent.depth + 1 : 0)
         end
       end
     end
@@ -87,7 +87,7 @@ describe ActsAsOrderedTree, 'Create node', :transactional do
       let(:parent) { create :scoped, :scope_type => type }
 
       it 'copies scope columns values from parent node' do
-        expect{record.save}.to change{record.scope_type}.to(parent.scope_type)
+        expect{record.save}.to change(record, :scope_type).to(parent.scope_type)
       end
     end
   end
