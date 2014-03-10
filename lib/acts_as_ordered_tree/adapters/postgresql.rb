@@ -22,8 +22,7 @@ module ActsAsOrderedTree
 
       def descendants(node, &block)
         traverse_down(node) do
-          scope = self_and_descendants(node, &block)
-          scope.where(scope.table[columns.id].not_eq(node.id))
+          without(node) { self_and_descendants(node, &block) }
         end
       end
 
@@ -35,12 +34,16 @@ module ActsAsOrderedTree
 
       def ancestors(node, &block)
         traverse_up(node) do
-          scope = self_and_ancestors(node, &block)
-          scope.where(scope.table[columns.id].not_eq(node.id))
+          without(node) { self_and_ancestors(node, &block) }
         end
       end
 
       private
+      def without(node)
+        scope = yield
+        scope.where(scope.table[columns.id].not_eq(node.id))
+      end
+
       def traverse_down(node)
         if node && node.persisted?
           yield
