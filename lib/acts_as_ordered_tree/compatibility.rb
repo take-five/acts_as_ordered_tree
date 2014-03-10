@@ -17,8 +17,6 @@ module ActsAsOrderedTree
 
         feature :default_scoped, '< 4.1.0'
       end
-
-      feature 'arel/nodes/postgres_array', '>= 3.1.0'
     end
   end
 end

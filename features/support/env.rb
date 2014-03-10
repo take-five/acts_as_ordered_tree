@@ -11,7 +11,7 @@ if ENV['COVERAGE'].to_i.nonzero?
     require 'simplecov'
     SimpleCov.command_name "cucumber/#{File.basename(ENV['BUNDLE_GEMFILE'])}/#{ENV['DB']}"
     SimpleCov.start 'test_frameworks' do
-      add_filter 'vendor/bundle/'
+      add_filter 'vendor/'
     end
   rescue LoadError
     #ignore

@@ -9,80 +9,149 @@ module ActsAsOrderedTree
       def self_and_ancestors(node, &block)
         return none unless node
 
-        preloaded_starting_with(node) { fetch_ancestors(node, &block) + [node] }
+        ancestors_scope(node, :include_first => true, &block)
       end
 
       def ancestors(node, &block)
-        nodes = fetch_ancestors(node, &block)
-
-        if nodes.any?
-          preloaded_starting_with(node) { nodes }
-        else
-          none
-        end
+        ancestors_scope(node, :include_first => false, &block)
       end
 
       def descendants(node, &block)
-        return none unless node.persisted?
-
-        children = block ? block.call(node.association(:children).scope) : node.children
-
-        preloaded_starting_with(node) do
-          children.map { |n| [n] + n.descendants(&block) }.reduce([], :+)
-        end
+        descendants_scope(node, :include_first => false, &block)
       end
 
       def self_and_descendants(node, &block)
-        return none unless node.persisted?
-
-        preloaded_starting_with(node) { [node] + descendants(node, &block) }
+        descendants_scope(node, :include_first => true, &block)
       end
 
       private
-      def parent(node, &block)
-        if block then
-          block.call(node.association(:parent).scope).first
-        else
-          node.parent
-        end
+      def ancestors_scope(node, options, &block)
+        traversal = Traversal.new(node, options, &block)
+        traversal.follow :parent
+        traversal.to_scope.reverse_order!
       end
 
-      def fetch_ancestors(node, &block)
-        if node && (parent = parent(node, &block))
-          fetch_ancestors(parent, &block) + [parent]
-        else
-          []
-        end
+      def descendants_scope(node, options, &block)
+        return none unless node.persisted?
+
+        traversal = Traversal.new(node, options, &block)
+        traversal.follow :children
+        traversal.to_scope
       end
 
-      def preloaded_starting_with(start_record, &records)
-        preloaded(records.call).extending(StartWith).start_record(start_record)
-      end
+      class Traversal
+        delegate :klass, :to => :@start_record
+        attr_accessor :include_first
 
-      # It is not recommended to use #start_with with this adapter, but
-      # it can be used in simple cases.
-      #
-      # @api private
-      module StartWith
-        def start_with(scope = nil, &block)
-          return self unless @start_record && (scope || block)
+        def initialize(start_record, options = {})
+          @start_record = start_record
+          @start_with = nil
+          @order_values = []
+          @where_values = []
+          @include_first = options[:include_first]
+          follow(options[:follow]) if options.key?(:follow)
 
-          scope ||= block.call(where(klass.primary_key => @start_record.id))
-
-          if scope.exists?
-            self
-          else
-            none
-          end
+          yield self if block_given?
         end
 
-        def start_record(record)
-          @start_record = record if record.persisted?
+        def follow(association_name)
+          @association = association_name
 
           self
         end
+
+        def start_with(scope = nil, &block)
+          @start_with = scope || block
+
+          self
+        end
+
+        def order_siblings(*values)
+          @order_values << values
+
+          self
+        end
+        alias_method :order, :order_siblings
+
+        def where(*values)
+          @where_values << values
+
+          self
+        end
+
+        def table
+          klass.arel_table
+        end
+
+        def klass
+          @start_record.class
+        end
+
+        def to_scope
+          null_scope.records(to_enum.to_a)
+        end
+
+        private
+        def each(&block)
+          return unless validate_start_conditions
+
+          yield @start_record if include_first
+
+          expand(@start_record, &block)
+        end
+
+        def validate_start_conditions
+          start_scope ? start_scope.exists? : true
+        end
+
+        def start_scope
+          return nil unless @start_with
+
+          if @start_with.is_a?(Proc)
+            @start_with.call klass.where(klass.primary_key => @start_record.id)
+          else
+            @start_with
+          end
+        end
+
+        def expand(record, &block)
+          expand_association(record).each do |child|
+            yield child
+
+            expand(child, &block)
+          end
+        end
+
+        def expand_association(record)
+          if constraints?
+            build_scope(record)
+          else
+            follow_association(record)
+          end
+        end
+
+        def build_scope(record)
+          scope = record.association(@association).scope
+
+          @where_values.each { |v| scope = scope.where(*v) }
+          scope = scope.except(:order).order(*@order_values.flatten) if @order_values.any?
+
+          scope
+        end
+
+        def follow_association(record)
+          Array.wrap(record.send(@association))
+        end
+
+        def null_scope
+          klass.where(nil).extending(Relation::Preloaded)
+        end
+
+        def constraints?
+          @where_values.any? || @order_values.any?
+        end
       end
-      private_constant :StartWith
+      private_constant :Traversal
     end # class Recursive
   end # module Adapters
 end # module ActsAsOrderedTree

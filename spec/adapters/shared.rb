@@ -76,7 +76,7 @@ shared_examples 'ActsAsOrderedTree adapter' do |adapter_class, model, attrs = {}
       end
 
       example 'start conditions can be changed via #start_with method' do
-        relation = adapter.self_and_descendants(root).start_with { |s| s.where('id != ?', root.id) }
+        relation = adapter.self_and_descendants(root) { |x| x.start_with { |s| s.where('id != ?', root.id) } }
 
         expect(relation).to be_empty
       end
@@ -123,9 +123,22 @@ shared_examples 'ActsAsOrderedTree adapter' do |adapter_class, model, attrs = {}
       end
 
       example 'start conditions can be changed via #start_with method' do
-        relation = adapter.descendants(root).start_with { |s| s.where('id != ?', root.id) }
+        relation = adapter.descendants(root) { |x| x.start_with { |s| s.where('id != ?', root.id) } }
 
         expect(relation).to be_empty
+      end
+
+      example 'siblings order can be changed via #order_siblings method' do
+        relation = adapter.descendants(root) { |x| x.order_siblings('position desc') }
+
+        expect(relation).to eq Array[
+          child_2,
+          grandchild_22,
+          grandchild_21,
+          child_1,
+          grandchild_12,
+          grandchild_11
+                               ]
       end
     end
 
@@ -189,7 +202,7 @@ shared_examples 'ActsAsOrderedTree adapter' do |adapter_class, model, attrs = {}
       end
 
       example 'start conditions can be changed via #start_with method' do
-        relation = adapter.self_and_ancestors(grandchild_11).start_with { |s| s.where('id != ?', grandchild_11.id) }
+        relation = adapter.self_and_ancestors(grandchild_11) { |x| x.start_with { |s| s.where('id != ?', grandchild_11.id) } }
 
         expect(relation).to be_empty
       end
@@ -245,7 +258,7 @@ shared_examples 'ActsAsOrderedTree adapter' do |adapter_class, model, attrs = {}
       end
 
       example 'start conditions can be changed via #start_with method' do
-        relation = adapter.ancestors(grandchild_11).start_with { |s| s.where('id != ?', grandchild_11.id) }
+        relation = adapter.ancestors(grandchild_11) { |x| x.start_with { |s| s.where('id != ?', grandchild_11.id) } }
 
         expect(relation).to be_empty
       end

@@ -1,8 +1,9 @@
 # coding: utf-8
 
+require 'active_record/hierarchical_query'
+
 require 'acts_as_ordered_tree/adapters/abstract'
 require 'acts_as_ordered_tree/relation/preloaded'
-require 'acts_as_ordered_tree/relation/recursive'
 
 module ActsAsOrderedTree
   module Adapters
@@ -66,36 +67,37 @@ module ActsAsOrderedTree
       end
 
       # Generates scope that traverses tree down to deep, starting from given +scope+
-      def descendants_scope(node, &block)
-        node.scope.
-        extending(Relation::Recursive).
-        connect_by(scope_columns_hash.merge(columns.id => columns.parent)).
-          start_with(node.to_relation) do |start|
-            start.select(positions_array.as(positions_alias))
-          end.
-          with_recursive do |descendants|
-            descendants.select(positions_array.prepend(positions_alias))
-          end.
-          with_recursive(&block).
-        reorder("#{positions_alias} ASC")
+      def descendants_scope(node)
+        node.scope.join_recursive do |query|
+          query.connect_by(join_columns(columns.id => columns.parent))
+               .start_with(node.to_relation)
+
+          yield query if block_given?
+
+          query.order_siblings(position)
+        end
       end
 
       # Generates scope that traverses tree up to root, starting from given +scope+
       def ancestors_scope(node, &block)
-        traverse = node.scope.
-          extending(Relation::Recursive).
-          connect_by(scope_columns_hash.merge(columns.parent => columns.id)).
-          start_with(node.to_relation).
-          with_recursive(&block)
-
         if columns.depth?
-          traverse.start_with { |start| start.select depth }
-          traverse.with_recursive { |ancestors| ancestors.select depth }
-          traverse.reorder depth.asc
+          build_ancestors_query(node, &block).reorder(depth)
         else
-          traverse.start_with { |start| start.select Arel.sql('0').as('_depth') }
-          traverse.with_recursive { |ancestors| ancestors.select ancestors.previous['_depth'] - 1 }
-          traverse.reorder('_depth ASC')
+          build_ancestors_query(node) do |query|
+            query.start_with { |start| start.select Arel.sql('0').as('__depth') }
+                 .select(query.prior['__depth'] - 1, :start_with => false)
+
+            yield query if block_given?
+          end.reorder('__depth')
+        end
+      end
+
+      def build_ancestors_query(node)
+        node.scope.join_recursive do |query|
+          query.connect_by(join_columns(columns.parent => columns.id))
+               .start_with(node.to_relation)
+
+          yield query if block_given?
         end
       end
 
@@ -107,12 +109,8 @@ module ActsAsOrderedTree
         attribute(columns.depth)
       end
 
-      def positions_array
-        Arel::Nodes::PostgresArray.new(attribute(columns.position))
-      end
-
-      def positions_alias
-        Arel.sql('_positions')
+      def position
+        attribute(columns.position)
       end
 
       def can_traverse_up?(node)
@@ -137,6 +135,12 @@ module ActsAsOrderedTree
 
       def scope_columns_hash
         Hash[tree.columns.scope.map { |x| [x, x] }]
+      end
+
+      def join_columns(hash)
+        scope_columns_hash.merge(hash).each_with_object({}) do |(k, v), h|
+          h[k.to_sym] = v.to_sym
+        end
       end
     end # class PostgreSQL
   end # module Adapters

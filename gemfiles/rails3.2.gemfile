@@ -7,6 +7,7 @@ gem "sqlite3", :platform=>:ruby
 gem "mysql2", :platform=>:ruby
 gem "simplecov", :platform=>:ruby
 gem "coveralls", :platform=>:ruby
+gem "activerecord-hierarchical_query", :github=>"take-five/activerecord-hierarchical_query"
 gem "activerecord", "~> 3.2.17"
 gem "activerecord-jdbcpostgresql-adapter", "~> 1.2.2", :platform=>:jruby
 gem "activerecord-jdbcsqlite3-adapter", "~> 1.2.2", :platform=>:jruby
