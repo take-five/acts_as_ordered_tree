@@ -4,18 +4,24 @@ require 'spec_helper'
 
 describe ActsAsOrderedTree, ':counter_cache option', :transactional do
   describe 'Class without counter cache, #children.size' do
-    let(:root) { create :default }
-    let!(:child_1) { create :default, :parent => root }
-    let!(:child_2) { create :default, :parent => root }
+    tree :factory => :default do
+      root {
+        child_1
+        child_2
+      }
+    end
 
     it { expect(root.children.size).to eq 2 }
     it { expect{root.children.size}.to query_database.once }
   end
 
   describe 'Class with counter cache, #children.size' do
-    let(:root) { create :default_with_counter_cache }
-    let!(:child_1) { create :default_with_counter_cache, :parent => root }
-    let!(:child_2) { create :default_with_counter_cache, :parent => root }
+    tree :factory => :default_with_counter_cache do
+      root {
+        child_1
+        child_2
+      }
+    end
 
     before { root.reload }
 

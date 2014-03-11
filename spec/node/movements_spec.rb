@@ -3,10 +3,13 @@
 require 'spec_helper'
 
 describe ActsAsOrderedTree::Node::Movements, :transactional do
-  let!(:root) { create :scoped }
-  let!(:child_1) { create :scoped, :parent => root }
-  let!(:child_2) { create :scoped, :parent => root }
-  let!(:child_3) { create :scoped, :parent => root }
+  tree :factory => :scoped do
+    root {
+      child_1
+      child_2
+      child_3
+    }
+  end
 
   describe '#move_to_child_of' do
     context 'when AR object given' do

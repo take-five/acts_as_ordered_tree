@@ -2,15 +2,20 @@
 
 shared_examples 'ActsAsOrderedTree adapter' do |adapter_class, model, attrs = {}|
   context model do
-    let(:root) { create model, attrs }
-    let(:child_1) { create model, attrs.merge(:parent => root) }
-    let(:child_2) { create model, attrs.merge(:parent => root) }
-    let!(:grandchild_11) { create model, attrs.merge(:parent => child_1) }
-    let!(:grandchild_12) { create model, attrs.merge(:parent => child_1) }
-    let!(:grandchild_21) { create model, attrs.merge(:parent => child_2) }
-    let!(:grandchild_22) { create model, attrs.merge(:parent => child_2) }
+    tree :factory => model, :attributes => attrs do
+      root {
+        child_1 {
+          grandchild_11
+          grandchild_12
+        }
+        child_2 {
+          grandchild_21
+          grandchild_22
+        }
+      }
+    end
 
-    let(:adapter) { adapter_class.new(root.ordered_tree) }
+    let(:adapter) { adapter_class.new(current_tree.ordered_tree) }
 
     shared_examples 'ActsAsOrderedTree traverse down for not persisted record' do |method|
       context 'when new record given' do

@@ -5,11 +5,15 @@ require 'spec_helper'
 describe ActsAsOrderedTree::Tree::ChildrenAssociation, :transactional do
   shared_examples 'ChildrenAssociation' do |model|
     describe model do
-      let!(:root) { create model }
-      let!(:child_1) { create model, :parent => root }
-      let!(:child_2) { create model, :parent => root }
-      let!(:child_3) { create model, :parent => root }
-      let(:klass) { root.class }
+      tree :factory => model do
+        root {
+          child_1
+          child_2
+          child_3
+        }
+      end
+
+      let(:klass) { current_tree }
 
       describe 'joining to association' do
         let(:relation) { klass.joins(:children) }

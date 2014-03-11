@@ -3,32 +3,32 @@
 require 'spec_helper'
 
 describe ActsAsOrderedTree::Tree::Scopes, :transactional do
-  shared_context 'ActsAsOrderedTree scopes tree' do |model, attrs = {}|
-    let!(:root_1) { create model, attrs }
-    let!(:child_1) { create model, attrs.merge(:parent => root_1) }
-    let!(:grandchild_1) { create model, attrs.merge(:parent => child_1) }
-    let!(:root_2) { create model, attrs }
-    let!(:child_2) { create model, attrs.merge(:parent => root_2) }
-    let!(:grandchild_2) { create model, attrs.merge(:parent => child_2) }
-
-    let(:klass) { root_1.class }
-  end
-
   shared_examples 'ActsAsOrderedTree scopes' do |model, attrs = {}|
     describe model do
-      include_context 'ActsAsOrderedTree scopes tree', model, attrs
+      tree :factory => model, :attributes => attrs do
+        root_1 {
+          child_1 {
+            grandchild_1
+          }
+        }
+        root_2 {
+          child_2 {
+            grandchild_2
+          }
+        }
+      end
 
       describe '.leaves' do
-        it { expect(klass.leaves.order(:id)).to eq [grandchild_1, grandchild_2] }
+        it { expect(current_tree.leaves.order(:id)).to eq [grandchild_1, grandchild_2] }
         it { expect(root_1.descendants.leaves).to eq [grandchild_1] }
       end
 
       describe '.roots' do
-        it { expect(klass.roots).to eq [root_1, root_2] }
+        it { expect(current_tree.roots).to eq [root_1, root_2] }
       end
 
       describe '.root' do
-        it { expect(klass.root).to eq root_1 }
+        it { expect(current_tree.root).to eq root_1 }
       end
     end
   end

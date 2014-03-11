@@ -23,10 +23,12 @@ require 'support/db/boot'
 require 'factory_girl'
 require 'support/factories'
 require 'support/matchers'
+require 'support/tree_factory'
 require 'database_cleaner'
 
 RSpec.configure do |config|
   config.include FactoryGirl::Syntax::Methods
+  config.extend TreeFactory
 
   config.treat_symbols_as_metadata_keys_with_true_values = true
 

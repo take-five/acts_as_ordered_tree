@@ -4,36 +4,37 @@ require 'spec_helper'
 
 describe ActsAsOrderedTree, 'Destroy node', :transactional do
   shared_examples 'destroy ordered tree node' do |model = :default, attrs = {}|
-    let(:root) { create model, attrs }
-    let!(:child1) { create model, attrs.merge(:parent => root) }
-    let!(:grandchild1) { create model, attrs.merge(:parent => child1) }
-    let!(:grandchild2) { create model, attrs.merge(:parent => grandchild1) }
-    let!(:child2) { create model, attrs.merge(:parent => root) }
-    let!(:child3) { create model, attrs.merge(:parent => root) }
+    tree :factory => model, :attributes => attrs do
+      root {
+        child_1 {
+          grandchild_1 {
+            grandchild_2
+          }
+        }
+        child_2
+        child_3
+      }
+    end
 
     def assert_destroyed(record)
       expect(record.class).not_to exist(record)
     end
 
     it 'destroys descendants' do
-      child1.destroy
+      child_1.destroy
 
-      assert_destroyed(grandchild1)
-      assert_destroyed(grandchild2)
+      assert_destroyed(grandchild_1)
+      assert_destroyed(grandchild_2)
     end
 
     it 'decrements lower siblings positions' do
-      child1.destroy
+      child_1.destroy
 
-      [child2, child3].each(&:reload)
+      [child_2, child_3].each(&:reload)
 
-      expect(child2.position).to eq 1
-      expect(child3.position).to eq 2
+      expect(child_2.position).to eq 1
+      expect(child_3.position).to eq 2
     end
-
-    #it 'decrements parent children counter' do
-    #  expect{child1.destroy}.to change{root.children.reload.size}.from(3).to(2)
-    #end
   end
 
   context 'Default model' do
@@ -50,7 +51,7 @@ describe ActsAsOrderedTree, 'Destroy node', :transactional do
     before { root.reload }
 
     it 'decrements parent children counter' do
-      expect{child1.destroy and root.reload}.to change(root, :categories_count).from(3).to(2)
+      expect{child_1.destroy and root.reload}.to change(root, :categories_count).from(3).to(2)
     end
   end
 end

@@ -6,28 +6,24 @@ require 'acts_as_ordered_tree/relation/iterable'
 
 describe ActsAsOrderedTree::Relation::Iterable, :transactional do
   shared_examples 'iterable' do |model|
-    # root_1
-    #   child_1
-    #     child_2
-    #   child_3
-    #     child_4
-    #     child_5
-    # root_2
-    #   child_6
-    let!(:root_1) { create model }
-    let!(:child_1) { create model, :parent => root_1 }
-    let!(:child_2) { create model, :parent => child_1 }
-    let!(:child_3) { create model, :parent => root_1 }
-    let!(:child_4) { create model, :parent => child_3 }
-    let!(:child_5) { create model, :parent => child_3 }
-    let!(:root_2) { create model }
-    let!(:child_6) { create model, :parent => root_2 }
-
-    let(:klass) { root_1.class }
+    tree :factory => model do
+      root_1 {
+        child_1 {
+          child_2
+        }
+        child_3 {
+          child_4
+          child_5
+        }
+      }
+      root_2 {
+        child_6
+      }
+    end
 
     describe '#each_with_level' do
       it 'iterates over collection and yields level' do
-        relation = klass.order(:id).extending(described_class)
+        relation = current_tree.order(:id).extending(described_class)
 
         expect { |b|
           relation.each_with_level(&b)
@@ -53,7 +49,7 @@ describe ActsAsOrderedTree::Relation::Iterable, :transactional do
     end
 
     describe '#each_without_orphans' do
-      let(:relation) { klass.order(:id).extending(described_class) }
+      let(:relation) { current_tree.order(:id).extending(described_class) }
 
       it 'iterates over collection' do
         expect { |b|

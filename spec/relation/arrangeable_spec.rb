@@ -3,13 +3,18 @@
 require 'spec_helper'
 
 describe ActsAsOrderedTree::Relation::Arrangeable, :transactional do
-  let(:root) { create :default }
-  let(:child_1) { create :default, :parent => root }
-  let(:child_2) { create :default, :parent => root }
-  let!(:grandchild_11) { create :default, :parent => child_1 }
-  let!(:grandchild_12) { create :default, :parent => child_1 }
-  let!(:grandchild_21) { create :default, :parent => child_2 }
-  let!(:grandchild_22) { create :default, :parent => child_2 }
+  tree :factory => :default do
+    root {
+      child_1 {
+        grandchild_11
+        grandchild_12
+      }
+      child_2 {
+        grandchild_21
+        grandchild_22
+      }
+    }
+  end
 
   specify '#descendants scope should be arrangeable' do
     expect(root.descendants.arrange).to eq Hash[
