@@ -11,5 +11,3 @@ gem 'coveralls', :platform => :ruby
 
 gem 'activerecord-jdbcpostgresql-adapter', '~> 1.2.0', :platform => :jruby
 gem 'activerecord-jdbcsqlite3-adapter', '~> 1.2.0', :platform => :jruby
-
-gem 'activerecord-hierarchical_query', :github => 'take-five/activerecord-hierarchical_query'
