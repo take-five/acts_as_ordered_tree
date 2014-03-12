@@ -1,8 +1,6 @@
 require 'bundler/gem_tasks'
 require 'rspec/core/rake_task'
 require 'appraisal'
-require 'cucumber'
-require 'cucumber/rake/task'
 require 'yaml'
 require 'erb'
 
@@ -73,9 +71,7 @@ task :db => 'db:all'
 RSpec::Core::RakeTask.new(:spec) do |t|
   t.rspec_opts = '--color --format progress'
 end
-Cucumber::Rake::Task.new(:features) do |t|
-  t.cucumber_opts = 'features --color --format progress --tags ~@wip'
-end
+
 
 begin
   require 'coveralls/rake/task'
@@ -100,7 +96,3 @@ namespace :coverage do
 end
 
 task :spec => 'coverage:enable'
-task :features => 'coverage:enable'
-
-desc 'Run all test suits'
-task :test => [:spec, :features]

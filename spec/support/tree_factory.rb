@@ -28,8 +28,9 @@ require 'set'
 #     end
 #   end
 module TreeFactory
-  class Node < Struct.new(:name, :attributes)
+  module AbstractNode
     attr_reader :parent
+    attr_accessor :position
 
     def children
       @children ||= []
@@ -50,6 +51,99 @@ module TreeFactory
         @parent.children << self
       end
     end
+
+    def ancestors
+      parent ? parent.ancestors + [parent] : []
+    end
+
+    def level
+      ancestors.size
+    end
+
+    def indentation
+      ' ' * 2 * level
+    end
+
+    def inspect_attributes
+      attributes.map do |k, v|
+        " / #{k} = #{v}"
+      end.join
+    end
+
+    def inspect_children
+      result = String.new
+
+      if children.any?
+        result << "\n"
+        result << children.map(&:inspect).join("\n")
+      end
+
+      result
+    end
+
+    def matches?(record)
+      record &&
+          record.level == level &&
+          record.ordered_tree_node.position == position &&
+          attributes_matches?(record) &&
+          record.children.size == children.size &&
+          children.zip(record.children).all? { |n, r| n.matches?(r) }
+    end
+
+    def attributes_matches?(record)
+      attributes.all? do |attr, value|
+        if attr.is_a?(Symbol)
+          record.__send__(attr)
+        else
+          record.instance_eval(attr)
+        end == value
+      end
+    end
+  end
+
+  class Node < Struct.new(:name, :attributes)
+    include AbstractNode
+
+    attr_accessor :context
+
+    def inspect
+      if context
+        result = indentation
+        result << record_name
+        result << " / id = #{as_record.id}"
+        result << inspect_attributes
+        result << inspect_children
+        result
+      else
+        super
+      end
+    end
+
+    def matches?(record)
+      record && record == as_record && super
+    end
+
+    private
+    def as_record
+      @record ||= context.__send__(name)
+    end
+
+    def record_name
+      to_s = [:name, :to_str, :to_s].detect { |m| as_record.respond_to?(m) }
+      as_record.__send__(to_s)
+    end
+  end
+
+  class AnyNode < Struct.new(:attributes)
+    include AbstractNode
+
+    def inspect
+      result = indentation
+      result << '*'
+      result << inspect_attributes
+      result << inspect_children
+      result
+    end
   end
 
   class Parser
@@ -58,10 +152,11 @@ module TreeFactory
     def initialize(options = {})
       @attributes = options.fetch(:attributes, {})
       @parent = nil
-      @ast = []
     end
 
-    def parse(&tree)
+    def parse(context, &tree)
+      @ast = []
+      @context = context
       instance_exec(&tree)
       ast
     end
@@ -75,16 +170,33 @@ module TreeFactory
     end
 
     def node(name, attributes = {}, &block)
-      node = Node.new(name.to_sym, attributes)
-      node.parent = @parent
+      build_node(block) do
+        Node.new(name.to_sym, @attributes.merge(attributes))
+            .tap { |x| x.context = @context }
+      end
+    end
 
-      @ast << node unless @parent
-
-      with_parent(node, &block)
+    def any(attributes = {}, &block)
+      build_node(block) { AnyNode.new(@attributes.merge(attributes)) }
     end
 
     def method_missing(name, attributes = {}, &block)
       node(name, attributes, &block)
+    end
+
+    def build_node(children_block)
+      node = yield
+
+      node.parent = @parent
+
+      if node.parent
+        node.position = node.parent.children.size
+      else
+        @ast << node
+        node.position = @ast.size
+      end
+
+      with_parent(node, &children_block)
     end
   end
 
@@ -100,13 +212,15 @@ module TreeFactory
     def build(&tree)
       memoize_nodes_class
 
-      ast = @parser.parse(&tree)
+      ast = @parser.parse(@suite, &tree)
       ast.each { |o| build_node(o) }
     end
 
     private
     def build_node(node)
       factory = @factory
+
+      raise 'Cannot build ANY node in BEFORE section' if node.is_a?(AnyNode)
 
       @suite.let!(node.name) do
         parent = node.parent && send(node.parent.name)
@@ -143,29 +257,18 @@ RSpec::Matchers.define :match_tree do |tree|
     @expected_tree = tree
     @klass = tree_klass
 
-    ast.zip(@klass.roots).all? { |node, record| node_equals_to_record?(node, record) }
+    ast.zip(@klass.roots).all? { |node, record| node.matches?(record) }
   end
 
   failure_message_for_should do |tree_klass|
     message = "expected actual tree\n\n"
     message << inspect_actual_tree(tree_klass)
     message << "\nto match\n\n"
-    message << inspect_expected_tree
+    message << ast.map(&:inspect).join("\n")
   end
 
   def ast
-    @ast ||= TreeFactory::Parser.new.parse(&@expected_tree)
-  end
-
-  def node_equals_to_record?(node, record)
-    if node && record
-      node_record = matcher_execution_context.__send__(node.name).reload
-      result = node_record == record
-      result &&= node_record.parent == record.parent
-      result &&= node_record.level == record.level
-      result &&= node.attributes.all? { |attr, value| record.send(attr) == value }
-      result && node.children.zip(record.children).all? { |n, r| node_equals_to_record?(n, r) }
-    end
+    @ast ||= TreeFactory::Parser.new.parse(matcher_execution_context, &@expected_tree)
   end
 
   def attributes_to_expose
@@ -198,30 +301,6 @@ RSpec::Matchers.define :match_tree do |tree|
     attributes_to_expose.each do |attr|
       result << " / #{attr} = #{record.send(attr)}"
     end
-    result
-  end
-
-  def inspect_expected_tree
-    ast.map { |node| inspect_node(node) }.join("\n")
-  end
-
-  def inspect_node(node, level = 0)
-    result = String.new
-    result << indentation(level)
-
-    record = matcher_execution_context.__send__(node.name)
-    result << record_name(record)
-    result << " / id = #{record.id}"
-
-    node.attributes.each do |k, v|
-      result << " / #{k} = #{v}"
-    end
-
-    if node.children.any?
-      result << "\n"
-      result << node.children.map { |x| inspect_node(x, level + 1) }.join("\n")
-    end
-
     result
   end
 
