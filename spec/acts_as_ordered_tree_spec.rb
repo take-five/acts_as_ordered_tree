@@ -1,119 +1,121 @@
 require File.expand_path('../spec_helper', __FILE__)
 
 describe ActsAsOrderedTree, :transactional do
-  it "creation_with_altered_column_names" do
-    lambda {
-      RenamedColumns.create!()
-    }.should_not raise_exception
+  example 'creation_with_altered_column_names' do
+    expect{RenamedColumns.create!}.not_to raise_error
   end
 
-  describe "#level" do
-    context "given a persistent root node" do
+  describe '#level' do
+    context 'given a persistent root node' do
       subject { create :default }
 
       its(:level) { should eq 0 }
     end
-    context "given a new root record" do
+
+    context 'given a new root record' do
       subject { build :default }
 
       its(:level) { should eq 0 }
     end
-    context "given a persistent node with parent" do
+
+    context 'given a persistent node with parent' do
       let(:root) { create :default }
       subject { create :default, :parent => root }
       its(:level) { should eq 1 }
     end
-    context "given a new node with parent" do
+
+    context 'given a new node with parent' do
       let(:root) { create :default }
       subject { build :default, :parent => root }
       its(:level) { should eq 1 }
     end
 
     context 'a model without depth column' do
-      let(:root) { create :scoped }
-      subject { create :scoped, :parent => root, :scope_type => root.scope_type }
-      its(:level) { should eq 1 }
+      tree :factory => :scoped do
+        root {
+          child {
+            grandchild
+          }
+        }
+      end
+
+      before { root.reload }
+      before { child.reload }
+      before { grandchild.reload }
+
+      it { expect(root.level).to eq 0 }
+      it { expect{root.level}.not_to query_database }
+
+      it { expect(child.level).to eq 1 }
+      it { expect{child.level}.to query_database.once }
+
+      it { expect(grandchild.level).to eq 2 }
+      it { expect{grandchild.level}.to query_database.at_least(:once) }
+
+      context 'given a record with already loaded parent' do
+        before { child.association(:parent).load_target }
+        before { grandchild.parent.association(:parent).load_target }
+
+        it { expect(child.level).to eq 1 }
+        it { expect{child.level}.not_to query_database }
+
+        it { expect(grandchild.level).to eq 2 }
+        it { expect{grandchild.level}.not_to query_database }
+      end
     end
   end
 
-  describe "move actions" do
-    let!(:root) { create :default_with_counter_cache, :name => 'root' }
-    let!(:child_1) { create :default_with_counter_cache, :parent => root, :name => 'child_1' }
-    let!(:child_2) { create :default_with_counter_cache, :parent => root, :name => 'child_2' }
-    let!(:child_3) { create :default_with_counter_cache, :parent => root, :name => 'child_3' }
-    let!(:child_4) { create :default_with_counter_cache, :parent => child_3, :name => 'child_4' }
+  describe 'move actions' do
+    tree :factory => :default_with_counter_cache do
+      root {
+        child_1
+        child_2 :name => 'child_2'
+        child_3 {
+          child_4
+        }
+      }
+    end
 
-    describe "#insert_at" do
+    describe '#insert_at' do
       before { ActiveSupport::Deprecation.silence { child_3.insert_at(1) } }
       before { child_3.reload }
 
       specify { expect([child_3, child_1, child_2]).to be_sorted }
     end
+  end
 
-    describe "callbacks" do
-      subject { child_3 }
-
-      it "should recalculate depth of descendants" do
-        record = create :default_with_counter_cache, :parent => child_3
-        record.depth.should eq 2
-
-        child_3.reload.depth.should eq 1
-        child_1.reload.depth.should eq 1
-
-        child_3.move_to_root
-        record.reload.depth.should eq 1
-
-        child_1.reload.depth.should eq 1
-
-        child_3.move_to_child_of child_1
-        child_3.reload
-
-        child_3.parent.should eq child_1
-        child_3.depth.should eq 2
-
-        record.reload.depth.should eq 3
+  describe 'scoped trees' do
+    tree :factory => :scoped do
+      root1 :scope_type => 't1' do
+        child1
+        orphan
+      end
+      root2 :scope_type => 't2' do
+        child2
       end
     end
 
-    context "changed attributes" do
-      before { child_2.name = 'changed_100' }
+    before { Scoped.where(:id => orphan.id).update_all(:scope_type => 't0', :position => 1) }
 
-      it { expect{child_2.move_to_left_of(child_1)}.to change(child_2, :name).to('child_2') }
+    it 'should not stick positions together for different scopes' do
+      expect(root1.position).to eq root2.position
     end
-
-  end
-
-  describe "scoped trees" do
-    let!(:root1) { create :scoped, :scope_type => "t1" }
-    let!(:child1) { create :scoped, :parent => root1 }
-    let!(:orphan) do
-      record = create :scoped, :parent => root1
-      record.class.where(:id => record.id).update_all(:scope_type => "t0", :position => 1)
-      record
+    it 'should automatically set scope for new records with parent' do
+      expect(child1.ordered_tree_node).to be_same_scope root1
     end
-
-    let!(:root2) { create :scoped, :scope_type => "t2" }
-    let!(:child2) { create :scoped, :scope_type => "t2", :parent => root2 }
-
-    it "should not stick positions together for different scopes" do
-      root1.position.should eq root2.position
-    end
-    it "should automatically set scope for new records with parent" do
-      child1.ordered_tree_node.should be_same_scope(root1)
-    end
-    it "should not include orphans" do
+    it 'should not include orphans' do
       expect(root1.children.reload).not_to include orphan
       expect(root1.descendants.reload).not_to include orphan
     end
-    it "should not allow to move records between scopes" do
+    it 'should not allow to move records between scopes' do
       expect(child2.move_to_child_of(root1)).to be_false
       expect(child2).to have_at_least(1).error_on(:parent)
     end
-    it "should not allow to change scope" do
+    it 'should not allow to change scope' do
       child2.parent = root1
       expect(child2).to have_at_least(1).error_on(:parent)
     end
-    it "should not allow to add scoped record to children collection" do
+    it 'should not allow to add scoped record to children collection' do
       root1.children << child2
       expect(root1.children.reload).not_to include child2
     end

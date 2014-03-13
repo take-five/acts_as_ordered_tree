@@ -108,6 +108,13 @@ describe ActsAsOrderedTree::Node::Movements, '#move_to_child_with_index', :trans
           }
         }
       end
+
+      context 'when attribute, not related to tree, changed' do
+        before { @old_name = node_2.name }
+        before { node_2.name = 'new name' }
+
+        it { expect{node_2.move_to_child_with_index(root, 1)}.to change(node_2, :name).to(@old_name) }
+      end
     end
   end
 

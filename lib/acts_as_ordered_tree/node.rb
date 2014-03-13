@@ -54,12 +54,11 @@ module ActsAsOrderedTree
     #
     # @return [Fixnum]
     def level
-      if tree.columns.depth? && record.persisted? && !parent_id_changed? && depth?
-        depth
-      else
+      case
+        when depth_column_could_be_used? then depth
+        when parent_association_loaded? then parent.level + 1
         # @todo move it adapters
-        # @todo check if parent loaded and return its level
-        ancestors.size
+        else ancestors.size
       end
     end
 
@@ -67,6 +66,14 @@ module ActsAsOrderedTree
     # @return [Arel::Table]
     def table
       record.class.arel_table
+    end
+
+    def depth_column_could_be_used?
+      tree.columns.depth? && record.persisted? && !parent_id_changed? && depth?
+    end
+
+    def parent_association_loaded?
+      record.association(:parent).loaded?
     end
   end # class Node
 end # module ActsAsOrderedTree

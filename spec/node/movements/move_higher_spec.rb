@@ -30,6 +30,13 @@ describe ActsAsOrderedTree::Node::Movements, '#move_higher', :transactional do
           node_3
         }
       end
+
+      context 'when attribute, not related to tree changed' do
+        before { @old_name = node_3.name }
+        before { node_3.name = 'new name' }
+
+        it { expect{node_3.move_higher}.to change(node_3, :name).to(@old_name) }
+      end
     end
   end
 

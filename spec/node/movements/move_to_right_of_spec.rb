@@ -104,6 +104,13 @@ describe ActsAsOrderedTree::Node::Movements, '#move_to_right_of', :transactional
         it { expect{ node_1.move_to_right_of(node_1) }.not_to change(current_tree, :all) }
         it { expect{ node_3.move_to_right_of(node_3) }.not_to change(current_tree, :all) }
       end
+
+      context 'when attribute, not related to tree changed' do
+        before { @old_name = node_2.name }
+        before { node_2.name = 'new name' }
+
+        it { expect{node_2.move_to_right_of(node_4)}.to change(node_2, :name).to(@old_name) }
+      end
     end
   end
 

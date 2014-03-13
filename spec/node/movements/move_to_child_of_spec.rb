@@ -22,6 +22,14 @@ describe ActsAsOrderedTree::Node::Movements, '#move_to_child_of', :transactional
           }.to change(child_3, :parent).from(root).to(child_1)
         end
 
+        it 'does not change attributes unrelated to tree' do
+          old, child_4.name = child_4.name, 'new name'
+
+          expect {
+            child_4.move_to_child_of(root)
+          }.to change(child_4, :name).to(old)
+        end
+
         context 'moving to child of self' do
           it { expect(child_3.move_to_child_of(child_3)).to be_false }
 
