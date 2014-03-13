@@ -70,6 +70,7 @@ describe ActsAsOrderedTree::PerseveringTransaction, :non_transactional do
     let!(:resource1) { Default.create!(:name => 'resource 1') }
     let!(:resource2) { Default.create!(:name => 'resource 2') }
 
+    # this test randomly fails on Rails 3.1
     it 'Restarts transaction when deadlock occurred' do
       threads = []
 

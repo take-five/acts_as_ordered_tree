@@ -3,31 +3,31 @@
 require 'spec_helper'
 
 describe ActsAsOrderedTree::Node::Movements, :non_transactional, :unless => ENV['DB'] == 'sqlite3' do
-  def self.concurrent(&block)
-    before(:each) do
-      @pending_steps ||= []
-      @pending_steps << block
+  class ConcurrentTasks < Array
+    def task(&block)
+      push block
     end
-  end
 
-  def self.work!
-    before(:each) do
-      (@pending_steps || []).map do |step|
-        spawn_thread { instance_eval(&step) }
+    def spawn(suite)
+      map do |task|
+        thread { suite.instance_eval(&task) }
       end.each(&:join)
+    end
 
-      @pending_steps = []
+    private
+    def thread(&block)
+      Thread.start do
+        ActiveRecord::Base.connection_pool.with_connection(&block)
+      end
     end
   end
 
-  def self.expect_tree_to_match(&block)
-    work!
-    super
-  end
+  def self.concurrent(&block)
+    tasks = ConcurrentTasks.new
+    tasks.instance_eval(&block)
 
-  def spawn_thread(&block)
-    Thread.start do
-      ActiveRecord::Base.connection_pool.with_connection(&block)
+    before do
+      tasks.spawn(self)
     end
   end
 
@@ -35,8 +35,8 @@ describe ActsAsOrderedTree::Node::Movements, :non_transactional, :unless => ENV[
     context 'create root nodes in empty tree simultaneously' do
       let(:current_tree) { FactoryGirl.factory_by_name(factory).build_class }
 
-      3.times do
-        concurrent { create factory, attrs }
+      concurrent do
+        3.times { task { create factory, attrs } }
       end
 
       expect_tree_to_match {
@@ -51,8 +51,8 @@ describe ActsAsOrderedTree::Node::Movements, :non_transactional, :unless => ENV[
         root
       end
 
-      3.times do
-        concurrent { create factory, attrs }
+      concurrent do
+        3.times { task { create factory, attrs } }
       end
 
       expect_tree_to_match {
@@ -68,9 +68,11 @@ describe ActsAsOrderedTree::Node::Movements, :non_transactional, :unless => ENV[
         root
       end
 
-      3.times {
-        concurrent { create factory, :parent => root }
-      }
+      concurrent do
+        3.times do
+          task { create factory, :parent => root }
+        end
+      end
 
       expect_tree_to_match {
         root {
@@ -89,9 +91,16 @@ describe ActsAsOrderedTree::Node::Movements, :non_transactional, :unless => ENV[
         node_4
       end
 
-      concurrent { node_2.move_higher }
-      concurrent { node_2.move_lower }
-      concurrent { node_2.move_to_right_of(node_4) }
+      # node itself isn't thread safe
+      def moved_node
+        current_tree.find(node_2)
+      end
+
+      concurrent do
+        task { moved_node.move_higher }
+        task { moved_node.move_lower }
+        task { moved_node.move_to_right_of(node_4) }
+      end
 
       expect_tree_to_match {
         any
@@ -109,9 +118,11 @@ describe ActsAsOrderedTree::Node::Movements, :non_transactional, :unless => ENV[
         node_3
       end
 
-      concurrent { node_1.move_to_child_of(root) }
-      concurrent { node_2.move_to_child_of(root) }
-      concurrent { node_3.move_to_child_of(root) }
+      concurrent do
+        task { node_1.move_to_child_of(root) }
+        task { node_2.move_to_child_of(root) }
+        task { node_3.move_to_child_of(root) }
+      end
 
       expect_tree_to_match {
         root {
@@ -132,9 +143,11 @@ describe ActsAsOrderedTree::Node::Movements, :non_transactional, :unless => ENV[
         }
       end
 
-      concurrent { node_1.move_to_left_of(root_2) }
-      concurrent { node_2.move_to_left_of(root_2) }
-      concurrent { node_3.move_to_left_of(root_2) }
+      concurrent do
+        task { node_1.move_to_left_of(root_2) }
+        task { node_2.move_to_left_of(root_2) }
+        task { node_3.move_to_left_of(root_2) }
+      end
 
       expect_tree_to_match {
         root_1
@@ -157,9 +170,11 @@ describe ActsAsOrderedTree::Node::Movements, :non_transactional, :unless => ENV[
         }
       end
 
-      concurrent { node_1.move_to_left_of(child_2) }
-      concurrent { node_2.move_to_left_of(child_2) }
-      concurrent { node_3.move_to_left_of(child_2) }
+      concurrent do
+        task { node_1.move_to_left_of(child_2) }
+        task { node_2.move_to_left_of(child_2) }
+        task { node_3.move_to_left_of(child_2) }
+      end
 
       expect_tree_to_match {
         root {
@@ -182,9 +197,11 @@ describe ActsAsOrderedTree::Node::Movements, :non_transactional, :unless => ENV[
         root_2
       end
 
-      concurrent { node_1.move_to_right_of(root_1) }
-      concurrent { node_2.move_to_right_of(root_1) }
-      concurrent { node_3.move_to_right_of(root_1) }
+      concurrent do
+        task { node_1.move_to_right_of(root_1) }
+        task { node_2.move_to_right_of(root_1) }
+        task { node_3.move_to_right_of(root_1) }
+      end
 
       expect_tree_to_match {
         root_1
@@ -207,9 +224,11 @@ describe ActsAsOrderedTree::Node::Movements, :non_transactional, :unless => ENV[
         }
       end
 
-      concurrent { node_1.move_to_right_of(child_1) }
-      concurrent { node_2.move_to_right_of(child_1) }
-      concurrent { node_3.move_to_right_of(child_1) }
+      concurrent do
+        task { node_1.move_to_right_of(child_1) }
+        task { node_2.move_to_right_of(child_1) }
+        task { node_3.move_to_right_of(child_1) }
+      end
 
       expect_tree_to_match {
         root {
@@ -231,9 +250,11 @@ describe ActsAsOrderedTree::Node::Movements, :non_transactional, :unless => ENV[
         }
       end
 
-      concurrent { node_1.move_to_root }
-      concurrent { node_2.move_to_root }
-      concurrent { node_3.move_to_root }
+      concurrent do
+        task { node_1.move_to_root }
+        task { node_2.move_to_root }
+        task { node_3.move_to_root }
+      end
 
       expect_tree_to_match {
         root
@@ -253,8 +274,10 @@ describe ActsAsOrderedTree::Node::Movements, :non_transactional, :unless => ENV[
         }
       end
 
-      concurrent { node_2.move_left }
-      concurrent { node_3.move_left }
+      concurrent do
+        task { node_2.move_left }
+        task { node_3.move_left }
+      end
 
       expect_tree_to_match {
         root {
@@ -276,8 +299,10 @@ describe ActsAsOrderedTree::Node::Movements, :non_transactional, :unless => ENV[
         }
       end
 
-      concurrent { node_2.move_right }
-      concurrent { node_3.move_right }
+      concurrent do
+        task { node_2.move_right }
+        task { node_3.move_right }
+      end
 
       expect_tree_to_match {
         root {
@@ -303,8 +328,10 @@ describe ActsAsOrderedTree::Node::Movements, :non_transactional, :unless => ENV[
         }
       end
 
-      concurrent { swap_1.move_to_child_with_position(child_2, 2) }
-      concurrent { swap_2.move_to_child_with_position(child_1, 1) }
+      concurrent do
+        task { swap_1.move_to_child_with_position(child_2, 2) }
+        task { swap_2.move_to_child_with_position(child_1, 1) }
+      end
 
       expect_tree_to_match {
         root {
