@@ -100,6 +100,8 @@ module RSpec::Matchers
       @queries = []
 
       subscriber = ActiveSupport::Notifications.subscribe('sql.active_record') do |*, sql|
+        next if sql[:name] == 'SCHEMA'
+
         @queries << sql[:sql]
       end
 
