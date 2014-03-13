@@ -39,8 +39,7 @@ module ActsAsOrderedTree
       def leaves_without_counter_cache
         aliaz = Arel::Nodes::TableAlias.new(arel_table, 't')
 
-        # @todo inspect generated query in Rails 3.x
-        subquery = default_scoped.select('1').
+        subquery = unscoped.select('1').
             from(aliaz).
             where(aliaz[ordered_tree.columns.parent].eq(arel_table[primary_key])).
             limit(1).

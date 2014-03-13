@@ -28,8 +28,6 @@ module ActsAsOrderedTree
     end
 
     # Returns scope to which record should be applied
-    #
-    # @todo apply with_default_scope here
     def scope
       if tree.columns.scope?
         tree.base_class.where Hash[tree.columns.scope.map { |column| [column, record[column]] }]
@@ -55,6 +53,7 @@ module ActsAsOrderedTree
     # @return [Fixnum]
     def level
       case
+        when root? then 0
         when depth_column_could_be_used? then depth
         when parent_association_loaded? then parent.level + 1
         # @todo move it adapters
