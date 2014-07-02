@@ -191,19 +191,19 @@ describe ActsAsOrderedTree::Node::Predicates, :transactional do
         before { child.class.where(:id => child.id).update_all(['scope_type = ?', 'b']) }
 
         context 'when parent association is cached and cache is stale' do
-          it { expect(root.is_ancestor_of?(child)).to be_false }
-          it { expect(root.is_or_is_ancestor_of?(child)).to be_false }
-          it { expect(child.is_descendant_of?(root)).to be_false }
-          it { expect(child.is_or_is_descendant_of?(root)).to be_false }
+          it { expect(root.is_ancestor_of?(child)).to be false }
+          it { expect(root.is_or_is_ancestor_of?(child)).to be false }
+          it { expect(child.is_descendant_of?(root)).to be false }
+          it { expect(child.is_or_is_descendant_of?(root)).to be false }
         end
 
         context 'when parent association is not loaded' do
           before { child.reload }
 
-          it { expect(root.is_ancestor_of?(child)).to be_false }
-          it { expect(root.is_or_is_ancestor_of?(child)).to be_false }
-          it { expect(child.is_descendant_of?(root)).to be_false }
-          it { expect(child.is_or_is_descendant_of?(root)).to be_false }
+          it { expect(root.is_ancestor_of?(child)).to be false }
+          it { expect(root.is_or_is_ancestor_of?(child)).to be false }
+          it { expect(child.is_descendant_of?(root)).to be false }
+          it { expect(child.is_or_is_descendant_of?(root)).to be false }
         end
       end
     end

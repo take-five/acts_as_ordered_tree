@@ -9,25 +9,27 @@ describe ActsAsOrderedTree, :transactional do
     context 'given a persistent root node' do
       subject { create :default }
 
-      its(:level) { should eq 0 }
+      it { expect(subject.level).to eq 0 }
     end
 
     context 'given a new root record' do
       subject { build :default }
 
-      its(:level) { should eq 0 }
+      it { expect(subject.level).to eq 0 }
     end
 
     context 'given a persistent node with parent' do
       let(:root) { create :default }
       subject { create :default, :parent => root }
-      its(:level) { should eq 1 }
+
+      it { expect(subject.level).to eq 1 }
     end
 
     context 'given a new node with parent' do
       let(:root) { create :default }
       subject { build :default, :parent => root }
-      its(:level) { should eq 1 }
+
+      it { expect(subject.level).to eq 1 }
     end
 
     context 'a model without depth column' do
@@ -108,12 +110,12 @@ describe ActsAsOrderedTree, :transactional do
       expect(root1.descendants.reload).not_to include orphan
     end
     it 'should not allow to move records between scopes' do
-      expect(child2.move_to_child_of(root1)).to be_false
-      expect(child2).to have_at_least(1).error_on(:parent)
+      expect(child2.move_to_child_of(root1)).to be false
+      expect(child2.errors_on(:parent).size).to be >= 1
     end
     it 'should not allow to change scope' do
       child2.parent = root1
-      expect(child2).to have_at_least(1).error_on(:parent)
+      expect(child2.errors_on(:parent).size).to be >= 1
     end
     it 'should not allow to add scoped record to children collection' do
       root1.children << child2
@@ -132,19 +134,25 @@ describe ActsAsOrderedTree, :transactional do
       context "given self as parent" do
         before { root.parent = root }
 
-        it { should have_at_least(1).error_on(:parent) }
+        it 'has at least 1 error_on' do
+          expect(subject.error_on(:parent).size).to be >= 1
+        end
       end
 
       context "given child as parent" do
         before { root.parent = child }
 
-        it { should have_at_least(1).error_on(:parent) }
+        it 'has at least 1 error_on' do
+          expect(subject.error_on(:parent).size).to be >= 1
+        end
       end
 
       context "given grandchild as parent" do
         before { root.parent = grandchild }
 
-        it { should have_at_least(1).error_on(:parent) }
+        it 'has at least 1 error_on' do
+          expect(subject.error_on(:parent).size).to be >= 1
+        end
       end
     end
   end

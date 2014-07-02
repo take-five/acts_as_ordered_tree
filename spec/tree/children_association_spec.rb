@@ -4,7 +4,7 @@ require 'spec_helper'
 
 describe ActsAsOrderedTree::Tree::ChildrenAssociation, :transactional do
   shared_examples 'ChildrenAssociation' do |model|
-    describe model do
+    describe model.to_s do
       tree :factory => model do
         root {
           child_1
@@ -22,7 +22,7 @@ describe ActsAsOrderedTree::Tree::ChildrenAssociation, :transactional do
       end
 
       describe 'loading association' do
-        it { expect(root.children).to have(3).items }
+        it { expect(root.children.size).to eq 3 }
         it { expect(root.children).to eq [child_1, child_2, child_3] }
 
         it { expect{root.children.to_a}.to query_database(/ORDER BY .*position/) }
@@ -34,7 +34,7 @@ describe ActsAsOrderedTree::Tree::ChildrenAssociation, :transactional do
 
         it { expect(relation).to eq [root, child_1, child_2, child_3] }
         it { expect(first.children).to be_loaded }
-        it { expect(first.children).to have(3).items }
+        it { expect(first.children.size).to eq 3 }
       end
 
       describe 'preloading association' do
@@ -43,7 +43,7 @@ describe ActsAsOrderedTree::Tree::ChildrenAssociation, :transactional do
 
         it { expect(relation).to eq [root, child_1, child_2, child_3] }
         it { expect(first.children).to be_loaded }
-        it { expect(first.children).to have(3).items }
+        it { expect(first.children.size).to eq 3 }
       end
 
       describe 'preloading association (via includes method)' do
@@ -52,7 +52,7 @@ describe ActsAsOrderedTree::Tree::ChildrenAssociation, :transactional do
 
         it { expect(relation).to eq [root, child_1, child_2, child_3] }
         it { expect(first.children).to be_loaded }
-        it { expect(first.children).to have(3).items }
+        it { expect(first.children.size).to eq 3 }
       end
 
       describe 'extensions' do

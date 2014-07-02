@@ -31,7 +31,7 @@ describe ActsAsOrderedTree::Node::Movements, '#move_to_child_of', :transactional
         end
 
         context 'moving to child of self' do
-          it { expect(child_3.move_to_child_of(child_3)).to be_false }
+          it { expect(child_3.move_to_child_of(child_3)).to be false }
 
           it 'does not move node' do
             expect {
@@ -55,7 +55,7 @@ describe ActsAsOrderedTree::Node::Movements, '#move_to_child_of', :transactional
         end
 
         context 'moving to child of descendant' do
-          it { expect(root.move_to_child_of(child_1)).to be_false }
+          it { expect(root.move_to_child_of(child_1)).to be false }
 
           it 'does node move node' do
             expect {
@@ -113,9 +113,9 @@ describe ActsAsOrderedTree::Node::Movements, '#move_to_child_of', :transactional
         end
 
         context 'moving to non-existent ID' do
-          before { child_3.stub(:valid?).and_return(false) }
+          before { allow(child_3).to receive(:valid?).and_return(false) }
 
-          it { expect(child_3.move_to_child_of(-1)).to be_false }
+          it { expect(child_3.move_to_child_of(-1)).to be false }
 
           it 'does not move node' do
             expect {

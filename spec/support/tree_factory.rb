@@ -268,7 +268,7 @@ RSpec::Matchers.define :match_tree do |tree|
   end
 
   def ast
-    @ast ||= TreeFactory::Parser.new.parse(matcher_execution_context, &@expected_tree)
+    @ast ||= TreeFactory::Parser.new.parse(self, &@expected_tree)
   end
 
   def attributes_to_expose

@@ -1,7 +1,7 @@
 # coding: utf-8
 
 shared_examples 'ActsAsOrderedTree adapter' do |adapter_class, model, attrs = {}|
-  context model do
+  context model.to_s do
     tree :factory => model, :attributes => attrs do
       root {
         child_1 {
@@ -108,7 +108,7 @@ shared_examples 'ActsAsOrderedTree adapter' do |adapter_class, model, attrs = {}
 
         it 'updates descendants' do
           relation.update_all(:name => 'x')
-          expect(relation.all? { |r| r.reload.name == 'x' }).to be_true
+          expect(relation.all? { |r| r.reload.name == 'x' }).to be true
 
           adapter.descendants(child_1).update_all(:name => 'y')
           adapter.descendants(child_2).update_all(:name => 'z')

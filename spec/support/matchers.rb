@@ -95,6 +95,10 @@ module RSpec::Matchers
       failure_message_for_should(true)
     end
 
+    def supports_block_expectations?
+      true
+    end
+
     private
     def record_queries
       @queries = []

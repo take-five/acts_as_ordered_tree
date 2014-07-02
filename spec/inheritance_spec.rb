@@ -85,7 +85,7 @@ describe ActsAsOrderedTree, 'inheritance without STI', :transactional do
       it { expect(node.children).to be_of klass }
 
       it 'applies class default scope to #children' do
-        expect(node.children).to have(1).item
+        expect(node.children.size).to eq 1
       end
     end
 

@@ -4,7 +4,7 @@ require 'spec_helper'
 
 describe ActsAsOrderedTree::Tree::Scopes, :transactional do
   shared_examples 'ActsAsOrderedTree scopes' do |model, attrs = {}|
-    describe model do
+    describe model.to_s do
       tree :factory => model, :attributes => attrs do
         root_1 {
           child_1 {

@@ -4,7 +4,7 @@ require 'rubygems'
 require 'bundler/setup'
 
 require 'rspec'
-require 'rspec-expectations'
+require 'rspec/expectations'
 
 if ENV['COVERAGE'].to_i.nonzero?
   begin

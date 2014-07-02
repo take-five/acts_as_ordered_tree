@@ -34,6 +34,8 @@ describe ActsAsOrderedTree, 'before/after add/remove callbacks', :transactional 
   end
 
   matcher :trigger_callback do |*callbacks, &block|
+    supports_block_expectations
+
     match_for_should do |proc|
       @with ||= nil
       Class1.triggered_callbacks = []
