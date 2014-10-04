@@ -19,10 +19,10 @@ Gem::Specification.new do |s|
   s.add_dependency 'activerecord', '>= 3.1.0'
   s.add_dependency 'activerecord-hierarchical_query', '~> 0.0.1'
 
-  s.add_development_dependency 'rake', '~> 10.1.1'
+  s.add_development_dependency 'rake', '~> 10.3.2'
   s.add_development_dependency 'bundler', '~> 1.5'
   s.add_development_dependency 'rspec', '~> 2.99.0'
-  s.add_development_dependency 'database_cleaner', '~> 1.2.0'
+  s.add_development_dependency 'database_cleaner', '~> 1.3.0'
   s.add_development_dependency 'factory_girl', '~> 4.4.0'
-  s.add_development_dependency 'appraisal', '>= 1.0.0.beta3'
+  s.add_development_dependency 'appraisal', '>= 1.0.2'
 end

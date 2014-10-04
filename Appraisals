@@ -23,7 +23,7 @@ appraise 'rails4.0' do
 end
 
 appraise 'rails4.1' do
-  gem 'activerecord', '~> 4.1.0.rc1'
+  gem 'activerecord', '~> 4.1.6'
 
   gem 'activerecord-jdbcpostgresql-adapter', '~> 1.3.6', :platform => :jruby
   gem 'activerecord-jdbcsqlite3-adapter', '~> 1.3.6', :platform => :jruby

@@ -28,8 +28,9 @@ module ActsAsOrderedTree
       included do
         attr_accessor :__update_hook
 
-        # Since rails 4.0 :update_record used for actual updates
-        method_name = private_method_defined?(:update_record) ? :update_record : :update
+        # Since rails 4.0 :update_record is used for actual updates
+        # Since rails 4.0.x and 4.1.x (i really don't know which is x) :_update_record is used
+        method_name = [:update_record, :_update_record].detect { |m| private_method_defined?(m) } || :update
 
         alias_method :update_without_hook, method_name
         alias_method method_name, :update_with_hook
