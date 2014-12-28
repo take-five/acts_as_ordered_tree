@@ -29,3 +29,11 @@ appraise 'rails4.1' do
   gem 'activerecord-jdbcsqlite3-adapter', '~> 1.3.6', :platform => :jruby
   gem 'activerecord-jdbcmysql-adapter', '~> 1.3.6', :platform => :jruby
 end
+
+appraise 'rails4.2' do
+  gem 'activerecord', '~> 4.2.0'
+
+  gem 'activerecord-jdbcpostgresql-adapter', '~> 1.3.6', :platform => :jruby
+  gem 'activerecord-jdbcsqlite3-adapter', '~> 1.3.6', :platform => :jruby
+  gem 'activerecord-jdbcmysql-adapter', '~> 1.3.6', :platform => :jruby
+end

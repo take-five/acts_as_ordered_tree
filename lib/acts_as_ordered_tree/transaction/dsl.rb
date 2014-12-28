@@ -11,7 +11,7 @@ module Arel
     #   # CASE WHEN "table"."x" > 1 THEN "table"."y" ELSE "table"."z" END
     #   switch.when(table[:x].gt(1)).then(table[:y]).else(table[:z])
     class Case < Arel::Nodes::Node
-      include Arel::Expression
+      include Arel::OrderPredications
       include Arel::Predications
 
       attr_reader :conditions, :default
@@ -45,7 +45,7 @@ module Arel
   end
 
   module Visitors
-    class ToSql < Arel::Visitors::Visitor
+    class ToSql < Arel::Visitors::ToSql.superclass
       private
       def visit_Arel_Nodes_Case o, *a
         conditions = o.conditions.map { |x| visit x, *a }.join(' ')
@@ -55,11 +55,42 @@ module Arel
       end
 
       def visit_Arel_Nodes_When o, *a
-        "WHEN #{visit o.left} THEN #{visit o.right, *a}"
+        "WHEN #{visit o.left, *a} THEN #{visit o.right, *a}"
       end
 
       def visit_Arel_Nodes_Else o, *a
         "ELSE #{visit o.expr, *a}"
+      end
+
+      if Arel::VERSION >= '6.0.0'
+        def visit_Arel_Nodes_Case o, collector
+          collector << 'CASE '
+          o.conditions.each do |x|
+            visit x, collector
+            collector << ' '
+          end
+          if o.default
+            visit o.default, collector
+            collector << ' '
+          end
+          collector << 'END'
+        end
+
+        def visit_Arel_Nodes_When o, collector
+          collector << 'WHEN '
+          visit o.left, collector
+          collector << ' THEN '
+          visit o.right, collector
+        end
+
+        def visit_Arel_Nodes_Else o, collector
+          collector << 'ELSE'
+          visit o.expr, collector
+        end
+
+        def visit_NilClass o, collector
+          collector << 'NULL'
+        end
       end
     end
 

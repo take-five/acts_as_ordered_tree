@@ -2,9 +2,14 @@
 
 require 'spec_helper'
 
+# All these examples throw deprecation errors with Rails 4.2
 describe ActsAsOrderedTree::Tree::ChildrenAssociation, :transactional do
   shared_examples 'ChildrenAssociation' do |model|
     describe model.to_s do
+      around(:each) do |example|
+        ActiveSupport::Deprecation.silence(&example)
+      end
+
       tree :factory => model do
         root {
           child_1

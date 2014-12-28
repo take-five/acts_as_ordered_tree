@@ -17,7 +17,7 @@ describe ActsAsOrderedTree, 'Destroy node', :transactional do
     end
 
     def assert_destroyed(record)
-      expect(record.class).not_to exist(record)
+      expect(record.class).not_to exist(record.id)
     end
 
     it 'destroys descendants' do

@@ -93,7 +93,7 @@ describe ActsAsOrderedTree::Node::Movements, :non_transactional, :unless => ENV[
 
       # node itself isn't thread safe
       def moved_node
-        current_tree.find(node_2)
+        current_tree.find(node_2.id)
       end
 
       concurrent do

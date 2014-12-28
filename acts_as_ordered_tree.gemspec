@@ -17,7 +17,7 @@ Gem::Specification.new do |s|
   s.require_paths = %w(lib)
 
   s.add_dependency 'activerecord', '>= 3.1.0'
-  s.add_dependency 'activerecord-hierarchical_query', '~> 0.0.1'
+  s.add_dependency 'activerecord-hierarchical_query', '~> 0.0.7'
 
   s.add_development_dependency 'rake', '~> 10.3.2'
   s.add_development_dependency 'bundler', '~> 1.5'

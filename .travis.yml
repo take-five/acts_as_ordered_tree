@@ -3,7 +3,7 @@ cache: bundler
 rvm:
   - 1.9.3
   - 2.0.0
-  - 2.1.0
+  - 2.1.2
   - jruby-19mode
 before_install: gem install bundler
 before_script:
@@ -16,6 +16,7 @@ gemfile:
   - gemfiles/rails3.2.gemfile
   - gemfiles/rails4.0.gemfile
   - gemfiles/rails4.1.gemfile
+  - gemfiles/rails4.2.gemfile
 script: "bundle exec rake db spec"
 after_success:
   - bundle exec rake coverage:push

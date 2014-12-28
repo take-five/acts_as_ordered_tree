@@ -20,8 +20,12 @@ module ActsAsOrderedTree
 
           fresh_object = reload_scope(options).find(record.id)
 
+          fresh_object.attributes.each_pair do |key, value|
+            record[key] = value
+          end
+
           record.instance_eval do
-            @attributes.update(fresh_object.instance_variable_get(:@attributes))
+            # @attributes.update(fresh_object.instance_variable_get(:@attributes))
             @attributes_cache = {}
           end
 
