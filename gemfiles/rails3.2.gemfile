@@ -4,7 +4,7 @@ source "http://rubygems.org"
 
 gem "pg", :platform => :ruby
 gem "sqlite3", :platform => :ruby
-gem "mysql2", :platform => :ruby
+gem "mysql2", "~> 0.3.20", :platform => :ruby
 gem "simplecov", :platform => :ruby
 gem "coveralls", :platform => :ruby
 gem "activerecord-jdbcpostgresql-adapter", "~> 1.2.2", :platform => :jruby
